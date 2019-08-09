@@ -25,7 +25,7 @@ Instalation:
 5. Get the code from this repository: git clone https://github.com/Sandokaaan/EAC_API_JAVA.git
 6. Optionnaly, you can build the code with your java compiller (Netbeans, Eclipse, javac).
 7. Open the folder "EAC_API_JAVA/dist" and run the code: <code>java -jar ApiExtension.jar<code>
-8. Stop the program started in the stage 7, locate the file "api.conf" and modify the lines <code>rpcuser, rpcpassword and rpcport<code> to be the same as in wallet config file - see stage 2. Also se the port number for the API server.
+8. Stop the program started in the stage 7, locate the file "api.conf" and modify the lines <code>rpcuser, rpcpassword and rpcport</code> to be the same as in wallet config file - see stage 2. Also se the port number for the API server.
 9. Start code <code>java -jar ApiExtension.jar</code> again and let it run on a background.
   
 Usage:
