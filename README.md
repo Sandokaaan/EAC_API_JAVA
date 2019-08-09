@@ -14,17 +14,15 @@ Advantages:
 Instalation:
 1. Get and compile the EarthCoin v.2.0 wallet. Follow the instructions at https://github.com/Sandokaaan/EarthCoin2019/releases
 2. Edit the config file of EarthCoin, make sure to add lines:
-<code>
-  txindex=1<br> 
-  rpcuser=YOUR_RPC_USERNAME
-  rpcpassword=YOUR_RPC_PASSWORD
-  rpcport=YOUR_RPC_PORT_NUMBER
-</code>
+<code> txindex=1</code><br>
+<code>rpcuser=YOUR_RPC_USERNAME</code><br>
+<code>rpcpassword=YOUR_RPC_PASSWORD</code><br>
+<code>rpcport=YOUR_RPC_PORT_NUMBER</code><br>
 3. Run the EarthCoin v.2.0 wallet and let it sync.
 4. Install/update the Java runtime environment, see https://www.java.com/ 
 5. Get the code from this repository: git clone https://github.com/Sandokaaan/EAC_API_JAVA.git
 6. Optionnaly, you can build the code with your java compiller (Netbeans, Eclipse, javac).
-7. Open the folder "EAC_API_JAVA/dist" and run the code: <code>java -jar ApiExtension.jar<code>
+7. Open the folder "EAC_API_JAVA/dist" and run the code: <code>java -jar ApiExtension.jar</code>
 8. Stop the program started in the stage 7, locate the file "api.conf" and modify the lines <code>rpcuser, rpcpassword and rpcport</code> to be the same as in wallet config file - see stage 2. Also se the port number for the API server.
 9. Start code <code>java -jar ApiExtension.jar</code> again and let it run on a background.
   
