@@ -11,8 +11,6 @@ import java.text.DecimalFormat;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -758,6 +756,10 @@ public class ApiResponse extends Task {
         return rts;
     }
     
+    private String doubleToFixedDecimalInternal(double value) {
+        return String.format("%.8f", value).replace(",", ".");
+    }
+     
     private String createTransactionInternal(JSONArray selectedSources, double amountToSent, String targetAddress, String sourceAddress) {
         JSONArray inputs = new JSONArray();
         JSONArray outputs = new JSONArray();
@@ -772,14 +774,12 @@ public class ApiResponse extends Task {
             input.put("vout", jsonTxo.getInt("vout"));
             inputs.put(input);
         }
-        JSONObject output1 = new JSONObject();
-        output1.put(targetAddress, amountToSent);
+        JSONObject output1 = new JSONObject("{\"" + targetAddress + "\":" + doubleToFixedDecimalInternal(amountToSent) + "}");
         outputs.put(output1);
         double sendBackAmount = selected - amountToSent;
         if (sendBackAmount>fee) {
             sendBackAmount -= fee;
-            JSONObject output2 = new JSONObject();
-            output2.put(sourceAddress, sendBackAmount);
+            JSONObject output2 = new JSONObject("{\"" + sourceAddress + "\":" + doubleToFixedDecimalInternal(sendBackAmount) + "}");
             outputs.put(output2);
         }
         String rts = client.query("createrawtransaction", inputs, outputs);
