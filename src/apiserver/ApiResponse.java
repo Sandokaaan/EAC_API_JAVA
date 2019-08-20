@@ -5,14 +5,18 @@
  */
 package apiserver;
 
+import apiextension.Config;
 import java.io.IOException;
 import java.text.DecimalFormat;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
+import system.Base58;
 import system.RawSocket;
 import system.RpcClient;
 import system.Task;
@@ -22,6 +26,8 @@ import system.Task;
  * @author Vratislav Bednařík
  */
 public class ApiResponse extends Task {
+    private final Config config;
+    private final String baseUrl;
     private static final String DEFAULT_THREAD_NAME = "API response task"; 
     private static final String RESPONSE_HEADER = 
         "HTTP/1.1 200 OK\n" +
@@ -50,7 +56,7 @@ public class ApiResponse extends Task {
         + "<a href=\"/doc\">API documentation</a>" 
         + "</td></tr></table><hr>";
     private static final String EXPLORER_FOOTER = 
-        "<hr><p align=\"center\">Powered by <A href=\"https://github.com/Sandokaaan/EarthCoin-API\">"
+        "<hr><p align=\"center\">Powered by <A href=\"https://github.com/Sandokaaan/EAC_API_JAVA.git\">"
         + "Sando-explorer v.2.0</A> &nbsp; &#9400; 2019</P></body></html>";
     private final RawSocket rawSocket;
     private final RpcClient client;
@@ -66,6 +72,8 @@ public class ApiResponse extends Task {
         this.client = client;
         command = null;
         response = null;
+        config = Config.getConfig();
+        baseUrl = "http://" + config.apiurl + ":" + config.apiport + "/";
     }
 
     @Override
@@ -131,6 +139,9 @@ public class ApiResponse extends Task {
                     break;
                 case "sendrawtransaction":
                     response = sendrawtransaction(params);
+                    break;
+                case "sendcoins":
+                    response = sendCoins(params);
                     break;
                 case "validateaddress":
                     response = validateaddress(params);
@@ -380,6 +391,14 @@ public class ApiResponse extends Task {
                 + "<td>Submits raw transaction (serialized, hex-encoded) to local node and network.</td>"
                 + "<td>Signed_raw_transaction</td>"
             + "</tr><tr>"
+                + "<td>sendcoins</td>"
+                + "<td></td>"
+                + "<td><FONT color=\"red\">Warning: unsafe method. Your private key is exposed. Use on your own risk. "
+                + "Suggested safe way is create and sign a transaction on the client side and send it using sendrawtransaction method.</FONT> "
+                + "This function check the balance on specified Sender_address, try to create a transaction, "
+                + "sign it with provided Private_key and broadcast it into the network.</td>"
+                + "<td>Receiver_address, Value_to_send, Sender_address, Private_key</td>"                
+            + "</tr><tr>"
                 + "<td>validateaddress</td>"
                 + "<td></td>"
                 + "<td>Return information about the given earthcoin address.</td>"
@@ -398,10 +417,10 @@ public class ApiResponse extends Task {
             + "<B>Common syntax:</B><BR>"
                 + "http://[SERVER_ADDRESS]:[SERVER_PORT]/[COMMAND]/[PARAM1]/[PARAM2]/[PARAM3]<BR>"
             + "<B>Examples:</B><BR>"
-                + "http://api.deveac.com/getinfo<BR>"
-                + "http://api.deveac.com/getblockhash/1000<BR>"
-                + "http://api.deveac.com/getblock/ea7dd253f3ef1e1353728e92fa637368244ffcf46de9da76f57ed019182fb92f/2<BR>"
-                + "http://api.deveac.com/unspent/en6bCHDGejFW2VdMkKZDCfyfzRUAujh6RA<BR>"
+                + baseUrl + "getinfo<BR>"
+                + baseUrl + "getblockhash/1000<BR>"
+                + baseUrl + "getblock/ea7dd253f3ef1e1353728e92fa637368244ffcf46de9da76f57ed019182fb92f/2<BR>"
+                + baseUrl + "unspent/en6bCHDGejFW2VdMkKZDCfyfzRUAujh6RA<BR>"
             + EXPLORER_FOOTER;
         return rts;
     }
@@ -711,6 +730,116 @@ public class ApiResponse extends Task {
             }
         }
         return error(params);
+    }
+
+    private boolean addressValidationInternal(String address) {
+        String tmp = client.query("validateaddress", address);
+        JSONObject json = new JSONObject(tmp);
+        return json.optBoolean("isvalid");
+    }
+    
+    private JSONObject getUnspentBalanceInternal(String address) {
+        String[] scanobjects = new String[1];
+        scanobjects[0] = "addr(" + address + ")";
+        String tmp = client.query("scantxoutset", "start", scanobjects);
+        return new JSONObject(tmp);
+    }
+    
+    private JSONArray selectSourcesInternal(JSONArray arrayUnspents, double amountToSent) {
+        JSONArray rts = new JSONArray();
+        double selected = 0.0;
+        for (int i=0; i<arrayUnspents.length(); i++) {
+            JSONObject jsonTxo = arrayUnspents.getJSONObject(i);
+            selected += jsonTxo.getDouble("amount");
+            rts.put(jsonTxo);
+            if (selected>amountToSent)
+                break;
+        }
+        return rts;
+    }
+    
+    private String createTransactionInternal(JSONArray selectedSources, double amountToSent, String targetAddress, String sourceAddress) {
+        JSONArray inputs = new JSONArray();
+        JSONArray outputs = new JSONArray();
+        double selected = 0.0;
+        double fee = 0.001;
+        
+        for (int i=0; i<selectedSources.length(); i++) {
+            JSONObject jsonTxo = selectedSources.getJSONObject(i);
+            selected += jsonTxo.getDouble("amount");
+            JSONObject input = new JSONObject();
+            input.put("txid", jsonTxo.getString("txid"));
+            input.put("vout", jsonTxo.getInt("vout"));
+            inputs.put(input);
+        }
+        JSONObject output1 = new JSONObject();
+        output1.put(targetAddress, amountToSent);
+        outputs.put(output1);
+        double sendBackAmount = selected - amountToSent;
+        if (sendBackAmount>fee) {
+            sendBackAmount -= fee;
+            JSONObject output2 = new JSONObject();
+            output2.put(sourceAddress, sendBackAmount);
+            outputs.put(output2);
+        }
+        String rts = client.query("createrawtransaction", inputs, outputs);
+        return rts;
+    }
+    
+    private String signTransactionInternal(String rawTx, String privKey) throws Exception {
+        JSONArray keys = new JSONArray();
+        keys.put(privKey);
+        String tmp = client.query("signrawtransactionwithkey", rawTx, keys);
+        JSONObject json = new JSONObject(tmp);
+        boolean complete = json.optBoolean("complete", false);
+        if (!complete)
+            throw (new Exception("Transaction signing failed. Probably a bad private key."));
+        return json.getString("hex");
+    }
+    
+    private String sendTransactionInternal(String signTx) {
+        String rts = client.query("sendrawtransaction", signTx);
+        try {
+            JSONObject jsonRts = new JSONObject(rts);
+        } catch (JSONException ex) {
+            return "{\"txid\": \"" + rts + "\"}\n";
+        }
+        return rts;    
+    }
+        
+    
+    private String sendCoins(String[] params) {
+        try {
+            if ( (params.length!=6) || (params[2].length()==0) || (params[3].length()==0) || (params[4].length()==0) || (params[5].length()==0) )
+                throw (new Exception ("This API method requires exactly 4 parameters - an address to receive coins, the amount to be send, the source address and the base58-encoded private key for signing the transaction."));
+            double amountToSent;
+            try {
+                amountToSent = Double.parseDouble(params[3]);
+            } catch (NumberFormatException ex) {
+                throw (new Exception("The 2nd parameter should be a number value."));
+            }
+            try {
+                Base58.decodeChecked(params[5]);
+            } catch (IllegalArgumentException ex) {
+                throw (new Exception("The 4th parameter should be a valid base58-encoded key."));
+            }
+            if (!(addressValidationInternal(params[2])))
+                throw (new Exception("The 1st parameter should be a valid address to receive transaction."));
+            if (!(addressValidationInternal(params[4])))
+                throw (new Exception("The 3th parameter should be a valid address with a balance as the transaction source."));
+            JSONObject jsonUnspent = getUnspentBalanceInternal(params[4]);
+            double balance = jsonUnspent.optDouble("total_amount", 0);
+            if (amountToSent>balance)
+                throw (new Exception("Unsufficient balance on source address " + params[4]));
+            JSONArray arrayUnspents = jsonUnspent.getJSONArray("unspents");
+            JSONArray selectedSources = (arrayUnspents.length() > 1) ? selectSourcesInternal(arrayUnspents, amountToSent) : arrayUnspents;
+            String rawTx = createTransactionInternal(selectedSources, amountToSent, params[2], params[4]);
+            String signTx = signTransactionInternal(rawTx, params[5]);
+            String rts = sendTransactionInternal(signTx);            
+            return rts;
+        } catch (Exception ex) {
+            return "{\"Error\": \"" + ex.getMessage() + "\"}\n";
+        }        
     }
     
 }
