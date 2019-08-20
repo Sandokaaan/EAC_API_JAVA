@@ -589,7 +589,12 @@ public class ApiResponse extends Task {
             inputs += "</TABLE>";
             for (int i=0; i<vout.length(); i++) {
                 JSONObject jsonVout = vout.getJSONObject(i);
-                String address = jsonVout.getJSONObject("scriptPubKey").getJSONArray("addresses").getString(0);
+                JSONArray addresses = jsonVout.getJSONObject("scriptPubKey").optJSONArray("addresses");
+                String address;
+                if (addresses != null)
+                    address = addresses.optString(0, "null");
+                else
+                    address = "null";
                 String linkedAddr = "<a href=\"/addressinfo/" + address + "\">" + address + "</a>";
                 double value = jsonVout.getDouble("value");
                 outputs += "<tr><td>"+i+"</td><td>&nbsp;</td><td>"+linkedAddr+"</td><td>&nbsp;</td><td> value: "+DF8.format(value)+"</td></tr>";
