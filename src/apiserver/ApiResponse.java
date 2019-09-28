@@ -151,6 +151,9 @@ public class ApiResponse extends Task {
                 case "unspent":
                     response = scantxoutset(params);
                     break;
+                case "getbalance":
+                    response = getbalance(params);
+                    break;
                 case "explorer":
                     explorerMode = true;
                     response = explore(params);
@@ -315,6 +318,16 @@ public class ApiResponse extends Task {
         return rts;
     }
 
+    private String getbalance(String[] params) {
+        if ((params.length<3) || (params[2].length()==0))
+            return "{\"Error\": \"API method requires at least one parameter\"}\n";
+        JSONObject jsonUnspent = getUnspentBalanceInternal(params[2]);
+        double balance = jsonUnspent.optDouble("total_amount", 0);        
+        String rts = "{\"Balance\": " + balance + "}\n";
+        return rts;
+    }
+    
+    
     private String getpeerinfo() {
         String rts = client.query("getpeerinfo"); // udelat specialni pripojeni do p2p, ne lepsi bude registrovat se na centralu a ziskat ?
         return rts;
@@ -406,6 +419,11 @@ public class ApiResponse extends Task {
                 + "<td></td>"
                 + "<td>Returns the estimated network hashes per second based on the last n blocks.</td>"
                 + "<td>-</td>"
+            + "</tr><tr>"
+                + "<td>getbalance</td>"
+                + "<td></td>"
+                + "<td>Returns the total balance hold on an address.</td>"
+                + "<td>Address</td>"
             + "</tr><tr>"
                 + "<td>unspent</td>"
                 + "<td>utxo</td>"
