@@ -14,8 +14,8 @@ import java.security.MessageDigest;
  * @author virtu
  */
 public abstract class Utils {
-    public static final Charset CHARSET = java.nio.charset.StandardCharsets.ISO_8859_1;
-    public static final String CHARSETNAME = "ISO8859-1";
+    public static final Charset CHARSET = java.nio.charset.StandardCharsets.UTF_8;
+    public static final String CHARSETNAME = "UTF-8";
     public static final Charset ASCII = java.nio.charset.StandardCharsets.US_ASCII; 
     public static final java.util.Random RANDOM = new java.util.Random();
     public static final char[] BASE = "0123456789abcdef".toCharArray();

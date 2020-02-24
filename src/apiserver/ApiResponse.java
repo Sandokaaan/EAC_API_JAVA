@@ -33,29 +33,31 @@ public class ApiResponse extends Task {
         "Access-Control-Request-Method: *\n" +
         "Access-Control-Allow-Methods: GET\n" + 
         "Access-Control-Allow-Headers: *\n" +
-        "Content-Type: application/json\n" +
+        "Content-Type: application/json; charset=utf-8\n" +
         "X-Powered-By: sando\n" +
         "Connection: close\n";
     private static final String HTTP_HEADER = 
         "HTTP/1.1 200 OK\n" +
-        "Content-Type: text/html; charset=iso-8859-1\n" +
+        "Content-Type: text/html; charset=utf-8\n" +
         "Connection: close\n\n";    
     private static final String EXPLORER_HEADER = 
-        "<!DOCTYPE html><html><head><title>EarthCoin (EAC) API & Block Explorer</title>"
-        + "<style>a:link, a:visited {text-decoration: none; color: blue}</style></head>"
-        + "<body><h1><p align=\"center\"><a href=\"/explorer\">API & Block Explorer for EarthCoin</a></p></h1>"
-        + "<table width=\"100%\"><tr><td width=\"20%\">&nbsp;&nbsp;"
-        + "</td><td width=\"60%\">"
-        + "<div align=\"center\"> "
-        + "<form action=\"/search/\" method=\"get\">"
-        + "<input name=\"q\" type=\"text\" size=\"80\" placeholder=\"block hash, index, transaction or address\" />"
-        + "<input type=\"submit\" value=\"Search\" /></form></div>"
-        + "</td><td width=\"20%\">"
-        + "<a href=\"/doc\">API documentation</a>" 
-        + "</td></tr></table><hr>";
+        "<!DOCTYPE html><html><head>\n"
+        + "<meta charset=\"utf-8\">\n"
+        + "<title>EarthCoin (EAC) API & Block Explorer</title>\n"
+        + "<style>a:link, a:visited {text-decoration: none; color: blue}</style>\n</head>\n"
+        + "<body><h1><p align=\"center\"><a href=\"/explorer\">API & Block Explorer for EarthCoin</a></p></h1>\n"
+        + "<table width=\"100%\"><tr><td width=\"20%\">&nbsp;&nbsp;\n"
+        + "</td><td width=\"60%\">\n"
+        + "<div align=\"center\"> \n"
+        + "<form action=\"/search/\" method=\"get\">\n"
+        + "<input name=\"q\" type=\"text\" size=\"80\" placeholder=\"block hash, index, transaction or address\" />\n"
+        + "<input type=\"submit\" value=\"Search\" /></form></div>\n"
+        + "</td><td width=\"20%\">\n"
+        + "<a href=\"/doc\">API documentation</a>\n" 
+        + "</td></tr></table><hr>\n";
     private static final String EXPLORER_FOOTER = 
-        "<hr><p align=\"center\">Powered by <A href=\"https://github.com/Sandokaaan/EAC_API_JAVA.git\">"
-        + "Sando-explorer v.2.0</A> &nbsp; &#9400; 2019</P></body></html>";
+        "<hr><p align=\"center\">Powered by <A href=\"https://github.com/Sandokaaan/EAC_API_JAVA.git\">\n"
+        + "Sando-explorer v.2.0</A> &nbsp; &#9400; 2019</P>\n</body>\n</html>\n";
     private final RawSocket rawSocket;
     private final RpcClient client;
     private String command;
@@ -562,8 +564,14 @@ public class ApiResponse extends Task {
                 + "<td width=\"10%\" align=\"center\">Amount (EAC)</td</tr><tr>";
             for (int i=0; i<nTx; i++){ 
                 String sTx = jsonTx[i].getString("txid");
+                int txVersion = jsonTx[i].getInt("version");
+                String txMessage = "";
+                if (txVersion == 2)
+                    txMessage = jsonTx[i].getString("txComment");
+                if (txMessage.length()>0)
+                    txMessage = "<br><font color=\"red\">"+txMessage+"</font>";
                 rts += "<td align=\"center\">" + i + "</td>"
-                + "<td align=\"center\"><a href=\"/transaction/" + sTx + "\">" + sTx + "</a></td>"
+                + "<td align=\"center\"><a href=\"/transaction/" + sTx + "\">" + sTx + "</a>"+txMessage+"</td>"
                 + "<td align=\"center\">" + DF8.format(valuesSent[i]) + "</td>"
                 + "<td align=\"center\">" + coutOfSources[i] + "</td>"
                 + "<td align=\"center\">" + targetAddresses[i] + "</td>"
@@ -597,14 +605,14 @@ public class ApiResponse extends Task {
             for (int i=0; i<vin.length(); i++) {
                 JSONObject jsonVin = vin.getJSONObject(i);
                 if (jsonVin.has("coinbase"))
-                    inputs += "<tr><td>"+i+"</td><td>&nbsp;</td><td>coinbase</td><td>&nbsp;</td><td>&nbsp;</td></tr>";
+                    inputs += "<tr><td>"+i+"</td><td>&nbsp;</td><td>coinbase</td><td>&nbsp;</td><td>&nbsp;</td></tr>\n";
                 else {
                     String prevTx = jsonVin.getString("txid");
                     int prevVout = jsonVin.getInt("vout");
-                    inputs += "<tr><td>"+i+"</td><td>&nbsp;</td><td><A href=\"/transaction/"+prevTx+"\">"+prevTx+"</a></td><td>&nbsp;</td><td>vout: " + prevVout + "</td><tr>";
+                    inputs += "<tr><td>"+i+"</td><td>&nbsp;</td><td><A href=\"/transaction/"+prevTx+"\">"+prevTx+"</a></td><td>&nbsp;</td><td>vout: " + prevVout + "</td><tr>\n";
                 }
             }
-            inputs += "</TABLE>";
+            inputs += "</TABLE>\n";
             for (int i=0; i<vout.length(); i++) {
                 JSONObject jsonVout = vout.getJSONObject(i);
                 JSONArray addresses = jsonVout.getJSONObject("scriptPubKey").optJSONArray("addresses");
@@ -615,9 +623,15 @@ public class ApiResponse extends Task {
                     address = "null";
                 String linkedAddr = "<a href=\"/addressinfo/" + address + "\">" + address + "</a>";
                 double value = jsonVout.getDouble("value");
-                outputs += "<tr><td>"+i+"</td><td>&nbsp;</td><td>"+linkedAddr+"</td><td>&nbsp;</td><td> value: "+DF8.format(value)+"</td></tr>";
+                outputs += "<tr><td>"+i+"</td><td>&nbsp;</td><td>"+linkedAddr+"</td><td>&nbsp;</td><td> value: "+DF8.format(value)+"</td></tr>\n";
             }                
-            outputs += "</TABLE>";
+            outputs += "</TABLE>\n";
+            if (version == 2) {
+                String txMessage = json.getString("txComment");
+                if (txMessage.length()>0) {
+                    outputs += "<br><font color=\"red\"><b>Transaction message: </b></font>" + txMessage + "<b>";
+                }
+            }
         } catch (JSONException ex) {
             return error(null);
         }
@@ -625,17 +639,17 @@ public class ApiResponse extends Task {
             DateTimeFormatter.RFC_1123_DATE_TIME.withZone(ZoneId.of("GMT")).format(Instant.ofEpochSecond(timestamp));
         String rts = 
             EXPLORER_HEADER
-            + "<H3>Details of transaction <code>" + txid + "</code> </H1><HR><code><table>"
-            + "<tr><td>txid</td><td>&nbsp;</td><td>" + txid + "</td></tr>"
-            + "<tr><td>confirmations</td><td>&nbsp;</td><td>" + confirmations + "</td></tr>"
-            + "<tr><td>blockhash</td><td>&nbsp;</td><td><A href=\"/explorer/" + blockhash + "\">" + blockhash + "</A></td></tr>"
-            + "<tr><td>size</td><td>&nbsp;</td><td>" + size + "</td></tr>"
-            + "<tr><td>version</td><td>&nbsp;</td><td>" + version + "</td></tr>"
-            + "<tr><td>timestamp</td><td>&nbsp;</td><td>" + timestamp + "</td></tr>"
-            + "<tr><td>date/time</td><td>&nbsp;</td><td>" + formatedTime + "</td></tr></table><br>"
-            + "<B>inputs</B><BR>" + inputs + "<br>"
-            + "<B>outputs</B><BR>" + outputs + "<br>"                    
-            + "</code>"
+            + "<H3>Details of transaction <code>" + txid + "</code> </H1><HR><code><table>\n"
+            + "<tr><td>txid</td><td>&nbsp;</td><td>" + txid + "</td></tr>\n"
+            + "<tr><td>confirmations</td><td>&nbsp;</td><td>" + confirmations + "</td></tr>\n"
+            + "<tr><td>blockhash</td><td>&nbsp;</td><td><A href=\"/explorer/" + blockhash + "\">" + blockhash + "</A></td></tr>\n"
+            + "<tr><td>size</td><td>&nbsp;</td><td>" + size + "</td></tr>\n"
+            + "<tr><td>version</td><td>&nbsp;</td><td>" + version + "</td></tr>\n"
+            + "<tr><td>timestamp</td><td>&nbsp;</td><td>" + timestamp + "</td></tr>\n"
+            + "<tr><td>date/time</td><td>&nbsp;</td><td>" + formatedTime + "</td></tr></table><br>\n"
+            + "<B>inputs</B><BR>" + inputs + "<br>\n"
+            + "<B>outputs</B><BR>" + outputs + "<br>\n"                    
+            + "</code>\n"
             + EXPLORER_FOOTER;
         return rts;
     }
