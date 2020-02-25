@@ -30,3 +30,6 @@ Usage:
 - default page is set to the online API documentation, see http://api2.deveac.com/
 - explorer can be accessed via the title link, see http://api2.deveac.com/explorer
 - API calls with json results are described in the online documentation, e.g. http://api2.deveac.com/getinfo
+
+Demo server:
+http://bck.deveac.com:3000/
