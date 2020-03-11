@@ -5,6 +5,8 @@
  */
 package system;
 
+import java.io.UnsupportedEncodingException;
+import java.net.URLDecoder;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.security.MessageDigest;
@@ -89,6 +91,49 @@ public abstract class Utils {
         return byteBuffer.getInt();
     }
     
+    public static int passIntParam(String[] params, int n, int defaultRts) {
+        if (!(params.length>n))
+            return defaultRts;
+        try {
+            int rts = Integer.parseInt(params[n]);
+            return (rts>0) ? rts : 0;
+        } catch (NumberFormatException  e) {
+            return defaultRts;
+        }
+    }
+    
+    public static long passLongParam(String[] params, int n, long defaultRts) {
+        if (!(params.length>n))
+            return defaultRts;
+        try {
+            long rts = Long.parseLong(params[n]);
+            return (rts>0) ? rts : 0;
+        } catch (NumberFormatException  e) {
+            return defaultRts;
+        }
+    }
+    
+    public static double passDoubleParam(String[] params, int n, double defaultRts) {
+        if (!(params.length>n))
+            return defaultRts;
+        try {
+            double rts = Double.parseDouble(params[n]);
+            return (rts>0) ? rts : 0;
+        } catch (NumberFormatException  e) {
+            return defaultRts;
+        }
+    }
+    
+    public static String passStringParam(String[] params, int n) {
+        if (!(params.length>n))
+            return "";        
+        try {
+            String rts = URLDecoder.decode(params[n], "UTF-8");
+            return rts;
+        } catch (UnsupportedEncodingException  e) {
+            return "";
+        }
+    }
     
 }
 

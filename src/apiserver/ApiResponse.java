@@ -18,6 +18,7 @@ import system.Base58;
 import system.RawSocket;
 import system.RpcClient;
 import system.Task;
+import system.Utils;
 
 /**
  *
@@ -33,31 +34,30 @@ public class ApiResponse extends Task {
         "Access-Control-Request-Method: *\n" +
         "Access-Control-Allow-Methods: GET\n" + 
         "Access-Control-Allow-Headers: *\n" +
-        "Content-Type: application/json; charset=utf-8\n" +
+        "Content-Type: application/json; charset=UTF-8\n" +
         "X-Powered-By: sando\n" +
         "Connection: close\n";
     private static final String HTTP_HEADER = 
         "HTTP/1.1 200 OK\n" +
-        "Content-Type: text/html; charset=utf-8\n" +
+        "Content-Type: text/html; charset=UTF-8\n" +
         "Connection: close\n\n";    
     private static final String EXPLORER_HEADER = 
-        "<!DOCTYPE html><html><head>\n"
-        + "<meta charset=\"utf-8\">\n"
+        "<!DOCTYPE html>\n<html>\n<head>\n<meta http-equiv=\"Content-Type\" content=\"text/html; charset=UTF-8\">\n"
         + "<title>EarthCoin (EAC) API & Block Explorer</title>\n"
         + "<style>a:link, a:visited {text-decoration: none; color: blue}</style>\n</head>\n"
-        + "<body><h1><p align=\"center\"><a href=\"/explorer\">API & Block Explorer for EarthCoin</a></p></h1>\n"
-        + "<table width=\"100%\"><tr><td width=\"20%\">&nbsp;&nbsp;\n"
-        + "</td><td width=\"60%\">\n"
-        + "<div align=\"center\"> \n"
-        + "<form action=\"/search/\" method=\"get\">\n"
-        + "<input name=\"q\" type=\"text\" size=\"80\" placeholder=\"block hash, index, transaction or address\" />\n"
-        + "<input type=\"submit\" value=\"Search\" /></form></div>\n"
-        + "</td><td width=\"20%\">\n"
-        + "<a href=\"/doc\">API documentation</a>\n" 
-        + "</td></tr></table><hr>\n";
+        + "<body><h1><p align=\"center\"><a href=\"/explorer\">API & Block Explorer for EarthCoin</a></p></h1>"
+        + "<table width=\"100%\"><tr><td width=\"20%\">&nbsp;&nbsp;"
+        + "</td><td width=\"60%\">"
+        + "<div align=\"center\"> "
+        + "<form action=\"/search/\" method=\"get\">"
+        + "<input name=\"q\" type=\"text\" size=\"80\" placeholder=\"block hash, index, transaction or address\" />"
+        + "<input type=\"submit\" value=\"Search\" /></form></div>"
+        + "</td><td width=\"20%\">"
+        + "<a href=\"/doc\">API documentation</a>" 
+        + "</td></tr></table><hr>";
     private static final String EXPLORER_FOOTER = 
-        "<hr><p align=\"center\">Powered by <A href=\"https://github.com/Sandokaaan/EAC_API_JAVA.git\">\n"
-        + "Sando-explorer v.2.0</A> &nbsp; &#9400; 2019</P>\n</body>\n</html>\n";
+        "<hr><p align=\"center\">Powered by <A href=\"https://github.com/Sandokaaan/EAC_API_JAVA.git\">"
+        + "Sando-explorer v.2.0</A> &nbsp; &#9400; 2019</P></body></html>";
     private final RawSocket rawSocket;
     private final RpcClient client;
     private String command;
@@ -155,6 +155,10 @@ public class ApiResponse extends Task {
                     break;
                 case "getbalance":
                     response = getbalance(params);
+                    break;
+                case "check":    
+                case "checktransaction":
+                    response = checktransaction(params);
                     break;
                 case "explorer":
                     explorerMode = true;
@@ -331,8 +335,85 @@ public class ApiResponse extends Task {
     
     
     private String getpeerinfo() {
-        String rts = client.query("getpeerinfo"); // udelat specialni pripojeni do p2p, ne lepsi bude registrovat se na centralu a ziskat ?
+        String rts = client.query("getpeerinfo"); 
         return rts;
+    }
+    
+    private boolean testOutputs(JSONArray jsonOuts, String address, double txValue) {
+        for (int i=0; i < jsonOuts.length(); i++) {
+            JSONArray arresses = jsonOuts.getJSONObject(i).getJSONObject("scriptPubKey").getJSONArray("addresses");
+            double sentValue = jsonOuts.getJSONObject(i).getDouble("value");
+            if (sentValue>=txValue)
+                for(Object adr: arresses)
+                    if (address.equals(adr))
+                        return true;
+      }       
+      return false;
+    }
+    
+    private boolean testTxComment(String txCommemt, JSONObject jsonTx) {
+        boolean txCommentPass = true;
+            if (txCommemt.length()>0) 
+                txCommentPass = (jsonTx.has("txComment")) ? 
+                    txCommemt.equals(jsonTx.getString("txComment")) 
+                    : false;
+        return txCommentPass;
+    }
+
+    @SuppressWarnings("UseSpecificCatch")
+    private String checktransaction(String[] params) {
+        if ((params.length<3) || (params[2].length()==0))
+            return "{\"Error\": \"API method requires some parameters, at least an address\"}\n";
+        String address = params[2];
+        double txValue = Utils.passDoubleParam(params, 3, 0);
+        String txCommemt = Utils.passStringParam(params,4);
+        int orderHeight = Utils.passIntParam(params, 5, 0);
+        int expirationTime = Utils.passIntParam(params, 6, 60);
+        if (orderHeight == 0)
+            orderHeight = Utils.passIntParam(new String []{client.query("getblockcount")}, 0, 60) - 60;
+        try {
+            // scan the memory pool first
+            String rts = client.query("getrawmempool"); 
+            JSONArray jsonMemPool = new JSONArray(rts);
+            for(Object o: jsonMemPool){
+                String tx = client.query("getrawtransaction", o, 1);
+                JSONObject jsonTx = new JSONObject(tx);
+                JSONArray jsonOuts = jsonTx.getJSONArray("vout");
+                if (  testTxComment(txCommemt, jsonTx) 
+                      && testOutputs(jsonOuts, address, txValue)) {
+                    jsonTx.put("confirmations", 0);
+                    return jsonTx.toString();
+                }                
+            }
+            if (orderHeight > 0) {
+                double orderTimeLimit = 0;
+                // scan the blockchain
+                String blockHash = client.query("getblockhash", orderHeight);
+                while (true) {
+                    String block = client.query("getblock", blockHash, 2);
+                    JSONObject jsonBlock = new JSONObject(block);
+                    double blockTime = jsonBlock.getDouble("time");
+                    if (orderTimeLimit == 0)
+                        orderTimeLimit = blockTime + 60*expirationTime;
+                    JSONArray jsonTxs = jsonBlock.getJSONArray("tx");
+                    for (int j=1; j < jsonTxs.length(); j++) {
+                        JSONObject rtsTx = jsonTxs.getJSONObject(j);
+                        JSONArray jsonOuts = rtsTx.getJSONArray("vout");
+                        if (  testTxComment(txCommemt, rtsTx)
+                              && testOutputs(jsonOuts, address, txValue)) {
+                            rtsTx.put("confirmations", jsonBlock.getInt("confirmations"));
+                            return rtsTx.toString();
+                        }
+                    }
+                    if ((!(jsonBlock.has("nextblockhash"))) || (blockTime>orderTimeLimit))
+                        break;
+                    blockHash = jsonBlock.getString("nextblockhash");
+                }
+            }
+            return "{\"Error\": \"Payment not found\"}\n";
+        } catch (Exception ex) {
+            return "{\"Error\": \"An internal error. Please, contact the API operator\"}\n";
+        }
     }
     
     private String doc(String[] params) {
@@ -431,6 +512,17 @@ public class ApiResponse extends Task {
                 + "<td>utxo</td>"
                 + "<td>Scans the unspent transaction output set for entries that match certain output descriptors.</td>"
                 + "<td>Address1, Address2, ...</td>"
+            + "</tr><tr>"
+                + "<td>checktransaction</td>"
+                + "<td>check</td>"
+                + "<td>Scan the blockchain and the memory pool for a transaction matching specified parameters. "
+                + "If succeeds, it returns the transaction details. <br><b>Parameters:</b><br>"
+                + "<b>Address</b> - mandatory. Transaction must be sent to this address. "
+                + "<b>Value</b> - optional. If set, transaction value must be equal or higher. "
+                + "<b>Transaction_comment</b> - optional. If set, txComment must match. "
+                + "<b>Order_height</b> - optional. If set, transction block height must be equal or higher. If not set, only top 60 block are scanned. "
+                + "<b>Expiration_time</b> - optional. If set, transction time must be no later than the specified number of minutes after the order. If not nes, default value of 60 minutes is used.</td>"
+                + "<td>Address, Value, Transaction_comment, Order_height, Expiration_time</td>"
             + "</tr></TABLE><BR><BR>"
             + "<B>Common syntax:</B><BR>"
                 + "http://[SERVER_ADDRESS]:[SERVER_PORT]/[COMMAND]/[PARAM1]/[PARAM2]/[PARAM3]<BR>"
@@ -439,6 +531,7 @@ public class ApiResponse extends Task {
                 + baseUrl + "getblockhash/1000<BR>"
                 + baseUrl + "getblock/ea7dd253f3ef1e1353728e92fa637368244ffcf46de9da76f57ed019182fb92f/2<BR>"
                 + baseUrl + "unspent/en6bCHDGejFW2VdMkKZDCfyfzRUAujh6RA<BR>"
+                + baseUrl + "check/ecGUjidXR9vfWZELZzJjWCpu9jbJ6guBAE/2/尝试中文/2887805/10<BR>"
             + EXPLORER_FOOTER;
         return rts;
     }
@@ -564,14 +657,8 @@ public class ApiResponse extends Task {
                 + "<td width=\"10%\" align=\"center\">Amount (EAC)</td</tr><tr>";
             for (int i=0; i<nTx; i++){ 
                 String sTx = jsonTx[i].getString("txid");
-                int txVersion = jsonTx[i].getInt("version");
-                String txMessage = "";
-                if (txVersion == 2)
-                    txMessage = jsonTx[i].getString("txComment");
-                if (txMessage.length()>0)
-                    txMessage = "<br><font color=\"red\">"+txMessage+"</font>";
                 rts += "<td align=\"center\">" + i + "</td>"
-                + "<td align=\"center\"><a href=\"/transaction/" + sTx + "\">" + sTx + "</a>"+txMessage+"</td>"
+                + "<td align=\"center\"><a href=\"/transaction/" + sTx + "\">" + sTx + "</a></td>"
                 + "<td align=\"center\">" + DF8.format(valuesSent[i]) + "</td>"
                 + "<td align=\"center\">" + coutOfSources[i] + "</td>"
                 + "<td align=\"center\">" + targetAddresses[i] + "</td>"
@@ -605,14 +692,14 @@ public class ApiResponse extends Task {
             for (int i=0; i<vin.length(); i++) {
                 JSONObject jsonVin = vin.getJSONObject(i);
                 if (jsonVin.has("coinbase"))
-                    inputs += "<tr><td>"+i+"</td><td>&nbsp;</td><td>coinbase</td><td>&nbsp;</td><td>&nbsp;</td></tr>\n";
+                    inputs += "<tr><td>"+i+"</td><td>&nbsp;</td><td>coinbase</td><td>&nbsp;</td><td>&nbsp;</td></tr>";
                 else {
                     String prevTx = jsonVin.getString("txid");
                     int prevVout = jsonVin.getInt("vout");
-                    inputs += "<tr><td>"+i+"</td><td>&nbsp;</td><td><A href=\"/transaction/"+prevTx+"\">"+prevTx+"</a></td><td>&nbsp;</td><td>vout: " + prevVout + "</td><tr>\n";
+                    inputs += "<tr><td>"+i+"</td><td>&nbsp;</td><td><A href=\"/transaction/"+prevTx+"\">"+prevTx+"</a></td><td>&nbsp;</td><td>vout: " + prevVout + "</td><tr>";
                 }
             }
-            inputs += "</TABLE>\n";
+            inputs += "</TABLE>";
             for (int i=0; i<vout.length(); i++) {
                 JSONObject jsonVout = vout.getJSONObject(i);
                 JSONArray addresses = jsonVout.getJSONObject("scriptPubKey").optJSONArray("addresses");
@@ -623,13 +710,13 @@ public class ApiResponse extends Task {
                     address = "null";
                 String linkedAddr = "<a href=\"/addressinfo/" + address + "\">" + address + "</a>";
                 double value = jsonVout.getDouble("value");
-                outputs += "<tr><td>"+i+"</td><td>&nbsp;</td><td>"+linkedAddr+"</td><td>&nbsp;</td><td> value: "+DF8.format(value)+"</td></tr>\n";
+                outputs += "<tr><td>"+i+"</td><td>&nbsp;</td><td>"+linkedAddr+"</td><td>&nbsp;</td><td> value: "+DF8.format(value)+"</td></tr>";
             }                
-            outputs += "</TABLE>\n";
+            outputs += "</TABLE>";
             if (version == 2) {
                 String txMessage = json.getString("txComment");
                 if (txMessage.length()>0) {
-                    outputs += "<br><font color=\"red\"><b>Transaction message: </b></font>" + txMessage + "<b>";
+                    outputs += "</br><font color=\"red\"><b>Transaction message: </b></font>" + txMessage + "</br>";
                 }
             }
         } catch (JSONException ex) {
@@ -639,17 +726,17 @@ public class ApiResponse extends Task {
             DateTimeFormatter.RFC_1123_DATE_TIME.withZone(ZoneId.of("GMT")).format(Instant.ofEpochSecond(timestamp));
         String rts = 
             EXPLORER_HEADER
-            + "<H3>Details of transaction <code>" + txid + "</code> </H1><HR><code><table>\n"
-            + "<tr><td>txid</td><td>&nbsp;</td><td>" + txid + "</td></tr>\n"
-            + "<tr><td>confirmations</td><td>&nbsp;</td><td>" + confirmations + "</td></tr>\n"
-            + "<tr><td>blockhash</td><td>&nbsp;</td><td><A href=\"/explorer/" + blockhash + "\">" + blockhash + "</A></td></tr>\n"
-            + "<tr><td>size</td><td>&nbsp;</td><td>" + size + "</td></tr>\n"
-            + "<tr><td>version</td><td>&nbsp;</td><td>" + version + "</td></tr>\n"
-            + "<tr><td>timestamp</td><td>&nbsp;</td><td>" + timestamp + "</td></tr>\n"
-            + "<tr><td>date/time</td><td>&nbsp;</td><td>" + formatedTime + "</td></tr></table><br>\n"
-            + "<B>inputs</B><BR>" + inputs + "<br>\n"
-            + "<B>outputs</B><BR>" + outputs + "<br>\n"                    
-            + "</code>\n"
+            + "<H3>Details of transaction <code>" + txid + "</code> </H1><HR><code><table>"
+            + "<tr><td>txid</td><td>&nbsp;</td><td>" + txid + "</td></tr>"
+            + "<tr><td>confirmations</td><td>&nbsp;</td><td>" + confirmations + "</td></tr>"
+            + "<tr><td>blockhash</td><td>&nbsp;</td><td><A href=\"/explorer/" + blockhash + "\">" + blockhash + "</A></td></tr>"
+            + "<tr><td>size</td><td>&nbsp;</td><td>" + size + "</td></tr>"
+            + "<tr><td>version</td><td>&nbsp;</td><td>" + version + "</td></tr>"
+            + "<tr><td>timestamp</td><td>&nbsp;</td><td>" + timestamp + "</td></tr>"
+            + "<tr><td>date/time</td><td>&nbsp;</td><td>" + formatedTime + "</td></tr></table><br>"
+            + "<B>inputs</B><BR>" + inputs + "<br>"
+            + "<B>outputs</B><BR>" + outputs + "<br>"                    
+            + "</code>"
             + EXPLORER_FOOTER;
         return rts;
     }
