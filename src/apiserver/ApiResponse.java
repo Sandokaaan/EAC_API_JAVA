@@ -714,11 +714,11 @@ public class ApiResponse extends Task {
             }                
             outputs += "</TABLE>";
             if (version == 2) {
-                String txMessage = json.getString("txComment");
+                String txMessage = json.optString("txComment");
                 if (txMessage.length()>0) {
                     outputs += "</br><font color=\"red\"><b>Transaction message: </b></font>" + txMessage + "</br>";
                 }
-                String IPFS_CID = json.getString("IPFS_CID");
+                String IPFS_CID = json.optString("IPFS_CID");                
                 if (IPFS_CID.length()>0) {
                     outputs += "<form action=\"https://ipfs.io/ipfs/"+IPFS_CID+"\">"
                             + " <font color=\"red\"><b>IPFS_CID: </b></font>" + IPFS_CID
