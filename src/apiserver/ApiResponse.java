@@ -357,6 +357,7 @@ public class ApiResponse extends Task {
                 txCommentPass = (jsonTx.has("txComment")) ? 
                     txCommemt.equals(jsonTx.getString("txComment")) 
                     : false;
+                //addProperty("property1", "property1 value");    
         return txCommentPass;
     }
 
@@ -717,6 +718,12 @@ public class ApiResponse extends Task {
                 String txMessage = json.getString("txComment");
                 if (txMessage.length()>0) {
                     outputs += "</br><font color=\"red\"><b>Transaction message: </b></font>" + txMessage + "</br>";
+                }
+                String IPFS_CID = json.getString("IPFS_CID");
+                if (IPFS_CID.length()>0) {
+                    outputs += "<form action=\"https://ipfs.io/ipfs/"+IPFS_CID+"\">"
+                            + " <font color=\"red\"><b>IPFS_CID: </b></font>" + IPFS_CID
+                            + " <input style=\"border-radius: 12px;\" type=\"submit\" formtarget=\"_blank\" value=\"View\" /> </form></br>";
                 }
             }
         } catch (JSONException ex) {
