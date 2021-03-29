@@ -357,7 +357,6 @@ public class ApiResponse extends Task {
                 txCommentPass = (jsonTx.has("txComment")) ? 
                     txCommemt.equals(jsonTx.getString("txComment")) 
                     : false;
-                //addProperty("property1", "property1 value");    
         return txCommentPass;
     }
 
