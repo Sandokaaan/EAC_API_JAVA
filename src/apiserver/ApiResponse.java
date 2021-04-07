@@ -720,9 +720,15 @@ public class ApiResponse extends Task {
                 }
                 String IPFS_CID = json.optString("IPFS_CID");                
                 if (IPFS_CID.length()>0) {
-                    outputs += "<form action=\"https://ipfs.io/ipfs/"+IPFS_CID+"\">"
-                            + " <font color=\"red\"><b>IPFS_CID: </b></font>" + IPFS_CID
-                            + " <input style=\"border-radius: 12px;\" type=\"submit\" formtarget=\"_blank\" value=\"View\" /> </form></br>";
+                  outputs += "< a href=\"https://ipfs.io/ipfs/"+IPFS_CID+"\">"
+        + " <font color=\"red\"><b>IPFS_CID: </b></font>" + IPFS_CID
+        + " <input style=\"border-radius: 12px;\" type=\"submit\" formtarget=\"_blank\" value=\"View\" /> </a >"
+        + "< a href=\"https://gateway.pinata.cloud/ipfs/"+IPFS_CID+"\">"
+        + " <input style=\"border-radius: 12px;\" type=\"submit\" formtarget=\"_blank\" value=\"View\" /> </a >"
+        + "< a href=\"https://dweb.link/ipfs/"+IPFS_CID+"\">"
+        + " <input style=\"border-radius: 12px;\" type=\"submit\" formtarget=\"_blank\" value=\"View\" /> </a >"
+        +"< a href=\"https://ipfs.fleek.co/ipfs"+IPFS_CID+"\">"
+        + " <input style=\"border-radius: 12px;\" type=\"submit\" formtarget=\"_blank\" value=\"View\" /> </a ></br>";
                 }
             }
         } catch (JSONException ex) {
