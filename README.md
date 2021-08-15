@@ -26,20 +26,20 @@ Instalation:
 8. Stop the program started in the stage 7, locate the file "api.conf" and modify the lines <code>rpcuser, rpcpassword and rpcport</code> to be the same as in wallet config file - see stage 2. Also se the port number for the API server.
 9. Start code <code>java -jar ApiExtension.jar</code> again and let it run on a background.
 
-HTTPS/SSL configuration (optional):
-10. Obtain a valid SSL certificate for the domain name of your server (for a free certificate see e.g. https://github.com/diafygi/acme-tiny).
+HTTPS/SSL configuration (optional):<br>
+10. Obtain a valid SSL certificate for the domain name of your server (for a free certificate see e.g. https://github.com/diafygi/acme-tiny).<br>
 11. Use <code> keytool </code> to import your SSL certificate to a <code> *.jks </code> keystore file:
 <code>
 keytool -importkeystore -deststorepass PASSWORD -destkeypass PASSWORD -destkeystore ./KEYSTOREFILE.jks -deststoretype pkcs12 -srckeystore SERVERCERTIFICATE.p12 -srcstoretype pkcs12 -srcstorepass PASSWORD -alias deveac
 </code><br>
-Do not forget to change capitalized words to your password and appropriate file names.
-12. Move the keystore file to a secure PATH
-13. Open the API config file <code> api.conf </code>. Set variables:
+Do not forget to change capitalized words to your password and appropriate file names.<br>
+12. Move the keystore file to a secure PATH<br>
+13. Open the API config file <code> api.conf </code>. Set variables:<br>
 <code> usessl=1 </code><br>
 <code> sslcertpath=PATH  </code><br>
 <code> sslcertpassword=PASSWORD  </code><br>
-Where change PATH with the full or relative path to your keystore file from the step 12, and PASSWORD with the password used in the step 11.
-14. Restart the API.
+Where change PATH with the full or relative path to your keystore file from the step 12, and PASSWORD with the password used in the step 11.<br>
+14. Restart the API.<br>
 
 A demo server with SSL-protocol enabled:
 https://blocks.deveac.com:3000/
