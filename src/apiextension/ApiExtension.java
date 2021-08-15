@@ -32,15 +32,6 @@ public class ApiExtension {
         
         api.close();
         
-        /*
-        RpcClient client = new RpcClient("127.0.0.1", 20000,"userEAC","J0st4St4ryhoP4r4n01dn1h0AJ3st3KT0muS1l3nyh0");
-        
-        for (int i=0; i< 100; i++)
-        {
-            String rts = client.query("getblockhash", i);
-            String raw = client.query("getblock", rts, true);
-            System.out.println(i + " - " + rts + "\n" + raw + "\n\n");
-        }*/
     }
     
 }
