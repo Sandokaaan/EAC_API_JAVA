@@ -45,4 +45,4 @@ A demo server with SSL-protocol enabled:
 https://blocks.deveac.com:4000/
 
 A demo server without SSL:
-https://blocks.deveac.com:9000/
+http://blocks.deveac.com:9000/
