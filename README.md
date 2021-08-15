@@ -42,4 +42,7 @@ Where change PATH with the full or relative path to your keystore file from the 
 14. Restart the API.<br>
 
 A demo server with SSL-protocol enabled:
-https://blocks.deveac.com:3000/
+https://blocks.deveac.com:4000/
+
+A demo server without SSL:
+https://blocks.deveac.com:9000/
