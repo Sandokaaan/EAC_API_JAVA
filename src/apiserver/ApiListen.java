@@ -10,6 +10,7 @@ import java.io.IOException;
 import java.net.ServerSocket;
 import system.RawSocket;
 import system.RpcClient;
+import system.ServerSocketSSL;
 
 /**
  *
@@ -33,7 +34,10 @@ public class ApiListen extends system.Task {
     protected void initialization() {
         Config config = Config.getConfig();
         try {
-            serverSocket = new ServerSocket(config.apiport);
+            if (config.usessl != 0)
+                serverSocket = ServerSocketSSL.openSSLServerSocket(config.apiport);
+            else
+                serverSocket = new ServerSocket(config.apiport);
             exiting = false;
         } catch (IOException ex) {
             System.err.println("Open API port failed. " + ex.getMessage());
