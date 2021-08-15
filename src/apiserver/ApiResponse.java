@@ -73,7 +73,7 @@ public class ApiResponse extends Task {
         command = null;
         response = null;
         config = Config.getConfig();
-        baseUrl = "http://" + config.apiurl + ":" + config.apiport + "/";
+        baseUrl = ((config.usessl!=0)?"https://":"http://") + config.apiurl + ":" + config.apiport + "/";
     }
 
     @Override
@@ -525,7 +525,7 @@ public class ApiResponse extends Task {
                 + "<td>Address, Value, Transaction_comment, Order_height, Expiration_time</td>"
             + "</tr></TABLE><BR><BR>"
             + "<B>Common syntax:</B><BR>"
-                + "http://[SERVER_ADDRESS]:[SERVER_PORT]/[COMMAND]/[PARAM1]/[PARAM2]/[PARAM3]<BR>"
+                + ((config.usessl!=0)?"https":"http") + "://[SERVER_ADDRESS]:[SERVER_PORT]/[COMMAND]/[PARAM1]/[PARAM2]/[PARAM3]<BR>"
             + "<B>Examples:</B><BR>"
                 + baseUrl + "getinfo<BR>"
                 + baseUrl + "getblockhash/1000<BR>"
