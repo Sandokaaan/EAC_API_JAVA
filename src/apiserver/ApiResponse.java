@@ -722,8 +722,15 @@ public class ApiResponse extends Task {
                 if (IPFS_CID.length()>0) {
                     outputs += "<form action=\"https://ipfs.io/ipfs/"+IPFS_CID+"\">"
                             + " <font color=\"red\"><b>IPFS_CID: </b></font>" + IPFS_CID
-                            + " <input style=\"border-radius: 12px;\" type=\"submit\" formtarget=\"_blank\" value=\"View\" /> </form></br>";
-                }
+                            + " <input style=\"border-radius: 12px;\" type=\"submit\" formtarget=\"_blank\" value=\"View on ipfs.io\" />"
+                            + " <button style=\"border-radius: 12px;\" type=\"submit\" formtarget=\"_blank\" formaction=\"https://gateway.pinata.cloud/ipfs/"
+                            + IPFS_CID+"\">View on pinata.cloud</button>"
+                            + " <button style=\"border-radius: 12px;\" type=\"submit\" formtarget=\"_blank\" formaction=\"https://dweb.link/ipfs/"
+                            + IPFS_CID+"\">View on dweb.link</button>"
+                            + " <button style=\"border-radius: 12px;\" type=\"submit\" formtarget=\"_blank\" formaction=\"https://ipfs.fleek.co/ipfs/"
+                            + IPFS_CID+"\">View on fleek.co</button>"
+                            + "</form><br>";
+                }                
             }
         } catch (JSONException ex) {
             return error(null);
