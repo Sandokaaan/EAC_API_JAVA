@@ -32,6 +32,9 @@ public class Config {
     public final String username;
     public final String password;
     public final String apiurl;
+    public int usessl = 0;
+    public String sslFileName = "";
+    public String sslPassword = "";
     
     private Integer parseParam(String param) {
         try{
@@ -78,7 +81,17 @@ public class Config {
                         if (n != null)
                             apiPortNumber = n;
                         break;
-                        
+                    case "usessl":
+                        n = parseParam(params[1]);
+                        if (n != null)
+                            usessl = n;
+                        break;
+                    case "sslcertpath":
+                        sslFileName = params[1].trim();
+                        break;    
+                    case "sslcertpassword":
+                        sslPassword = params[1].trim();
+                        break;                        
                 }
             }
         } catch (FileNotFoundException e) {
@@ -92,6 +105,9 @@ public class Config {
                 writer.write("rpcpassword="+rpcPassword+"\n");
                 writer.write("apiurl="+apiUrl+"\n");
                 writer.write("apiport="+apiPortNumber+"\n");
+                writer.write("usessl=0\n");
+                writer.write("sslcertpath=PATH_TO_YOUR_JKS_CERTIFICATE\n");
+                writer.write("sslcertpassword=PASSWORD_TO_YOUR_JKS_CERTIFICATE\n");                
                 writer.close();
             } catch (IOException ex) {
                 System.err.println("error in file write");
