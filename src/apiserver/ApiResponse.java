@@ -131,6 +131,7 @@ public class ApiResponse extends Task {
                     response = getblock(params);
                     break;
                 case "getrawtransaction":
+                case "extx":                    
                 case "tx":
                     response = getrawtransaction(params);
                     break;
@@ -273,12 +274,33 @@ public class ApiResponse extends Task {
         if (params.length>=4)
             if (params[3].equals("true") || params[3].equals("1"))
                 decrypt = 1;
-        if (params[1].equals("tx"))
+        if (params[1].equals("tx") || params[1].equals("extx"))
             decrypt = 1;
-        String rts = addStringQuotes(client.query("getrawtransaction", hash, decrypt));
-        return rts;
+        String rts = (client.query("getrawtransaction", hash, decrypt));
+        if (params[1].equals("extx")) try {
+            JSONObject jsonTx = new JSONObject(rts);
+            JSONArray jsonInputs = jsonTx.getJSONArray("vin");
+            for (int j=0; j < jsonInputs.length(); j++) {
+                JSONObject jsonIn = jsonInputs.getJSONObject(j);
+                if (jsonIn.has("txid")) {
+                    String srcTx = jsonIn.getString("txid");
+                    int i = jsonIn.getInt("vout");
+                    String subquery = (client.query("getrawtransaction", srcTx, decrypt));
+                    JSONObject jsonSrcTx = new JSONObject(subquery);
+                    JSONObject jsonOut = jsonSrcTx.getJSONArray("vout").getJSONObject(i);
+                    String address = jsonOut.getJSONObject("scriptPubKey").getJSONArray("addresses").getString(0);
+                    double value = jsonOut.getDouble("value");                    
+                    jsonIn.put("address", address);
+                    jsonIn.put("value", value);
+                    jsonInputs.put(j, jsonIn);
+                }
+            }
+            jsonTx.put("vin", jsonInputs);
+            rts = jsonTx.toString();
+        } catch (Exception ex) {}
+        return addStringQuotes(rts);
     }
-
+    
     private String gettxout(String[] params) {
         try {
             if ((params.length<4) || (params[2].length()==0) || (params[3].length()==0) )
