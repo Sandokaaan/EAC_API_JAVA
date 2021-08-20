@@ -266,6 +266,10 @@ public class ApiResponse extends Task {
         return (verbosity == 0) ? addStringQuotes(rts) : rts;
     }
 
+    private double round8(double value) {
+        return ((double)((long)(value*100000000)))/100000000;
+    }
+    
     private String getrawtransaction(String[] params) {
         if ((params.length<3) || (params[2].length()==0))
             return "{\"Error\": \"API method requires an parameter\"}\n";
@@ -277,8 +281,15 @@ public class ApiResponse extends Task {
         if (params[1].equals("tx") || params[1].equals("extx"))
             decrypt = 1;
         String rts = (client.query("getrawtransaction", hash, decrypt));
-        if (params[1].equals("extx")) try {
+        if (params[1].equals("extx")) try {            
+            double txValue = 0.0;
             JSONObject jsonTx = new JSONObject(rts);
+            JSONArray jsonOutputs = jsonTx.getJSONArray("vout");
+            for (int i=0; i < jsonOutputs.length(); i++) {
+                JSONObject jsonOut = jsonOutputs.getJSONObject(i);
+                txValue += jsonOut.getDouble("value");
+            }
+            double txFee = -txValue;
             JSONArray jsonInputs = jsonTx.getJSONArray("vin");
             for (int j=0; j < jsonInputs.length(); j++) {
                 JSONObject jsonIn = jsonInputs.getJSONObject(j);
@@ -289,18 +300,21 @@ public class ApiResponse extends Task {
                     JSONObject jsonSrcTx = new JSONObject(subquery);
                     JSONObject jsonOut = jsonSrcTx.getJSONArray("vout").getJSONObject(i);
                     String address = jsonOut.getJSONObject("scriptPubKey").getJSONArray("addresses").getString(0);
-                    double value = jsonOut.getDouble("value");                    
+                    double value = jsonOut.getDouble("value");
+                    txFee += value;
                     jsonIn.put("address", address);
                     jsonIn.put("value", value);
                     jsonInputs.put(j, jsonIn);
                 }
             }
             jsonTx.put("vin", jsonInputs);
+            jsonTx.put("txValue", round8(txValue));
+            jsonTx.put("txFee", round8(txFee > 0 ? txFee : 0));
             rts = jsonTx.toString();
         } catch (Exception ex) {}
         return addStringQuotes(rts);
-    }
-    
+    }    
+   
     private String gettxout(String[] params) {
         try {
             if ((params.length<4) || (params[2].length()==0) || (params[3].length()==0) )
