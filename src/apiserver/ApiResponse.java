@@ -584,133 +584,99 @@ public class ApiResponse extends Task {
             + EXPLORER_FOOTER;
         return rts;
     }
-    
-    
-    private String explore(String[] params) {
-        int blockIndex = -1;
-        String blockHash = null;
-        if ( (params.length == 3) && (params[2].length() > 0) ) {
-            try {
-                blockIndex = Integer.parseInt(params[2]);
-            } catch (NumberFormatException ex) {
-                blockHash = params[2];
-            }
-        }       
-        if (blockHash == null) {
-            try {
-                blockHash = (blockIndex < 0) 
-                    ? client.query("getbestblockhash") 
-                    : client.query("getblockhash", blockIndex);
-            } catch (Exception ex) {
-                return error(params);
-            }
-        }
-        JSONObject json;
+        
+    private String transaction(String tx) {
+        String txid, blockhash;
+        int confirmations, size, version;
+        String inputs, outputs;
+        long timestamp;
+        JSONArray vin, vout;
+        double txFee, txValue;
         try {
-            String block = client.query("getblock", blockHash, 2);
-            json = new JSONObject(block);
-        } catch (JSONException ex) {
-            return error(params);
-        }
-        String prevHash, nextHash, prevLink, nextLink;
-        try {
-            prevHash = json.getString("previousblockhash");
-            prevLink = "<A href=\"/explorer/" + prevHash + "\"><B>&lt;&lt;</B></A>";
-        } catch (JSONException ex) { 
-            prevLink = "<FONT color=\"gray\"><B>&lt;&lt;</B></FONT>";
-        }
-        try {
-            nextHash = json.getString("nextblockhash");
-            nextLink = "<A href=\"/explorer/" + nextHash + "\"> <B>&gt;&gt;</B></A>";
-        } catch (JSONException ex) { 
-            nextLink = "<FONT color=\"gray\"><B>&gt;&gt;</B></FONT>";
-        }
-        try {
-            int height = json.getNumber("height").intValue();
-            String hash = json.getString("hash");
-            int nTx = json.getNumber("nTx").intValue();
-            int size = json.getNumber("size").intValue();
-            int confirmations = json.getInt("confirmations");
-            long time = json.getNumber("time").intValue();
-            String formatedTime = 
-                DateTimeFormatter.RFC_1123_DATE_TIME.withZone(ZoneId.of("GMT")).format(Instant.ofEpochSecond(time));
-            double difficulty = json.getDouble("difficulty");
-            String sSize = DF.format(((0.0 + size)/1024)) + " kB";
-            long now = Instant.now().toEpochMilli()/1000;
-            double age = (0.0 + now-time)/60;
-            String sAge = DF.format(age);
-            JSONArray txArray = json.getJSONArray("tx");
-            JSONObject jsonTx[] = new JSONObject[nTx];
-            double valuesSent[] = new double[nTx];
-            int coutOfSources[] = new int[nTx];
-            int coutOfTargets[] = new int[nTx];
-            String targetAddresses[] = new String[nTx];
-            String targetValues[] = new String[nTx];
-            double totalSent = 0.0;
-            for (int i=0; i<nTx; i++){ 
-                targetValues[i] = "";
-                targetAddresses[i] = "";
-                valuesSent[i] = 0.0;
-                jsonTx[i] = txArray.getJSONObject(i);
-                JSONArray coinBaseOutputs = jsonTx[i].getJSONArray("vout");
-                coutOfSources[i] = jsonTx[i].getJSONArray("vin").length();
-                coutOfTargets[i] = coinBaseOutputs.length();
-                for (int j=0; j<coutOfTargets[i]; j++) {
-                    JSONObject jsonOut = coinBaseOutputs.getJSONObject(j);
-                    String address;
+            inputs = "<TABLE>";
+            outputs = "<TABLE>";
+            JSONObject json = new JSONObject(tx);
+            txid = json.getString("txid");
+            blockhash = json.getString("blockhash");
+            confirmations = json.getInt("confirmations");
+            version = json.getInt("version");
+            size = json.getInt("size");
+            timestamp = json.getLong("time");
+            vin = json.getJSONArray("vin");
+            vout = json.getJSONArray("vout");
+            txFee = json.optDouble("txFee");
+            txValue = json.optDouble("txValue");
+            for (int i=0; i<vin.length(); i++) {
+                JSONObject jsonVin = vin.getJSONObject(i);
+                if (jsonVin.has("coinbase"))
+                    inputs += "<tr><td>"+i+"</td><td>&nbsp;</td><td>coinbase</td><td>&nbsp;</td><td>&nbsp;</td></tr>";
+                else {
+                    String prevTx = jsonVin.getString("txid");
+                    int prevVout = jsonVin.getInt("vout");
+                    inputs += "<tr><td>"+i+"</td><td>&nbsp;</td><td>txid: <A href=\"/transaction/"+prevTx+"\">"+prevTx+"</a></td><td>&nbsp;</td><td>vout: " + prevVout + "</td><tr>";
                     try {
-                        address = jsonOut.getJSONObject("scriptPubKey").getJSONArray("addresses").getString(0);
-                    } catch (JSONException ex) {
-                        address = "null";
+                      String srcAddress = jsonVin.getString("address");
+                      double value = jsonVin.getDouble("value");
+                      inputs += "<tr><td>\t</td><td>&nbsp;</td><td>address: <A href=\"/addressinfo/"+srcAddress+"\">"+srcAddress+"</a></td><td>&nbsp;</td><td>value: " + round8(value) + " EAC</td><tr>";
+                    } catch (Exception ex) {
+                      inputs += "<tr><td>\t</td><td>&nbsp;</td><td>hidden source address</td><td>&nbsp;</td><td>&nbsp;</td><tr>";
                     }
-                    double value = jsonOut.getDouble("value");
-                    targetValues[i] += DF8.format(value) + "<BR>";
-                    targetAddresses[i] += "<a href=\"/addressinfo/" + address + "\">" + address + "</a><BR>";
-                    totalSent += value;
-                    valuesSent[i] += value;
                 }
             }
-            //System.out.println(json);
-            //System.out.println(txArray);
-            String rts = EXPLORER_HEADER
-                + "<H3>Details of block <code>" + height + "</code> </H1><HR>"
-                + "<code><table><tr>"
-                    + "<td> Hash </td>"
-                    + "<td align=\"right\"> " + prevLink + " </td>"
-                    + "<td> " + hash + " </td>"
-                    + "<td align=\"left\"> " + nextLink + " </td></tr>"
-                + "<tr><td>Height</td><td>&nbsp;</td><td>" + height + "</td><td>&nbsp;</td></tr>"
-                + "<tr><td>Confirmations</td><td>&nbsp;</td><td>" + confirmations+ "</td><td>&nbsp;</td></tr>"
-                + "<tr><td>Timestamp</td><td>&nbsp;</td><td>" + time + "</td><td>&nbsp;</td></tr>"                    
-                + "<tr><td>Date/Time</td><td>&nbsp;</td><td>" + formatedTime + "</td><td>&nbsp;</td></tr>"
-                + "<tr><td>Age</td><td>&nbsp;</td><td>" + sAge + " min</td><td>&nbsp;</td></tr>"                    
-                + "<tr><td>Count of transactions</td><td>&nbsp;</td><td>" + nTx + "</td><td>&nbsp;</td></tr>"
-                + "<tr><td>Block size</td><td>&nbsp;</td><td>" + sSize + "</td><td>&nbsp;</td></tr>"
-                + "<tr><td>Difficulty</td><td>&nbsp;</td><td>" + DF8.format(difficulty) + "</td><td>&nbsp;</td></tr>"
-                + "<tr><td>Block reward</td><td>&nbsp;</td><td>" + DF8.format(valuesSent[0]) + " EAC </td><td>&nbsp;</td></tr>"
-                + "<tr><td>Total output</td><td>&nbsp;</td><td>" + DF8.format(totalSent) + " EAC </td><td>&nbsp;</td></tr>"
-                + "</table></code><br><br>Transactions<br>"
-                + "<code><table width=\"100%\" border=\"1\"><tr><td width=\"5%\" align=\"center\">#</td>"
-                + "<td width=\"45%\" align=\"center\">TxID</td>"
-                + "<td width=\"10%\" align=\"center\">Value Out (EAC)</td>"
-                + "<td width=\"10%\" align=\"center\">Count of sources</td>"
-                + "<td width=\"20%\" align=\"center\">To</td>"
-                + "<td width=\"10%\" align=\"center\">Amount (EAC)</td</tr><tr>";
-            for (int i=0; i<nTx; i++){ 
-                String sTx = jsonTx[i].getString("txid");
-                rts += "<td align=\"center\">" + i + "</td>"
-                + "<td align=\"center\"><a href=\"/transaction/" + sTx + "\">" + sTx + "</a></td>"
-                + "<td align=\"center\">" + DF8.format(valuesSent[i]) + "</td>"
-                + "<td align=\"center\">" + coutOfSources[i] + "</td>"
-                + "<td align=\"center\">" + targetAddresses[i] + "</td>"
-                + "<td align=\"center\">" + targetValues[i] + "</td></tr>";
+            inputs += "</TABLE>";
+            for (int i=0; i<vout.length(); i++) {
+                JSONObject jsonVout = vout.getJSONObject(i);
+                JSONArray addresses = jsonVout.getJSONObject("scriptPubKey").optJSONArray("addresses");
+                String address;
+                if (addresses != null)
+                    address = addresses.optString(0, "null");
+                else
+                    address = "null";
+                String linkedAddr = "<a href=\"/addressinfo/" + address + "\">" + address + "</a>";
+                double value = jsonVout.getDouble("value");
+                outputs += "<tr><td>"+i+"</td><td>&nbsp;</td><td>"+linkedAddr+"</td><td>&nbsp;</td><td> value: "+DF8.format(value)+"</td></tr>";
+            }                
+            outputs += "</TABLE>";
+            if (version == 2) {
+                String txMessage = json.optString("txComment");
+                if (txMessage.length()>0) {
+                    outputs += "</br><font color=\"red\"><b>Transaction message: </b></font>" + txMessage + "</br>";
+                }
+                String IPFS_CID = json.optString("IPFS_CID");               
+                if (IPFS_CID.length()>0) {
+                    outputs += "<form action=\"https://ipfs.io/ipfs/"+IPFS_CID+"\">"
+                            + " <font color=\"red\"><b>IPFS_CID: </b></font>" + IPFS_CID
+                            + " <input style=\"border-radius: 12px;\" type=\"submit\" formtarget=\"_blank\" value=\"View on ipfs.io\" />"
+                            + " <button style=\"border-radius: 12px;\" type=\"submit\" formtarget=\"_blank\" formaction=\"https://gateway.pinata.cloud/ipfs/"+IPFS_CID+"\">View on pinata.cloud</button>"
+                            + " <button style=\"border-radius: 12px;\" type=\"submit\" formtarget=\"_blank\" formaction=\"https://dweb.link/ipfs/"+IPFS_CID+"\">View on dweb.link</button>"
+                            + " <button style=\"border-radius: 12px;\" type=\"submit\" formtarget=\"_blank\" formaction=\"https://ipfs.fleek.co/ipfs/"+IPFS_CID+"\">View on fleek.co</button>"
+                            + "</form><br>";
+                }
             }
-            rts += "</table></code>" + EXPLORER_FOOTER;
-            return rts;
-        } catch (JSONException e) {
-            return error(params);
-        }        
-    }
+        } catch (JSONException ex) {
+            return error(null);
+        }
+        String formatedTime = 
+            DateTimeFormatter.RFC_1123_DATE_TIME.withZone(ZoneId.of("GMT")).format(Instant.ofEpochSecond(timestamp));
+        String rts = 
+            EXPLORER_HEADER
+            + "<H3>Details of transaction <code>" + txid + "</code> </H1><HR><code><table>"
+            + "<tr><td>txid</td><td>&nbsp;</td><td>" + txid + "</td></tr>"
+            + "<tr><td>confirmations</td><td>&nbsp;</td><td>" + confirmations + "</td></tr>"
+            + "<tr><td>blockhash</td><td>&nbsp;</td><td><A href=\"/explorer/" + blockhash + "\">" + blockhash + "</A></td></tr>"
+            + "<tr><td>size</td><td>&nbsp;</td><td>" + size + "</td></tr>"
+            + "<tr><td>version</td><td>&nbsp;</td><td>" + version + "</td></tr>"
+            + "<tr><td>timestamp</td><td>&nbsp;</td><td>" + timestamp + "</td></tr>"
+            + "<tr><td>date/time</td><td>&nbsp;</td><td>" + formatedTime + "</td></tr>";
+        if (!Double.isNaN(txValue))
+            rts += "<tr><td>value</td><td>&nbsp;</td><td>" + DF8.format(txValue) + " EAC </td></tr>";
+        if (!Double.isNaN(txFee))
+            rts += "<tr><td>fee</td><td>&nbsp;</td><td>" + DF8.format(txFee) + " EAC </td></tr>";
+        rts += "</table><br><B>inputs</B><BR>" + inputs + "<br>"
+            + "<B>outputs</B><BR>" + outputs + "<br> </code>"
+            + EXPLORER_FOOTER;
+        return rts;
+    }    
 
     private String transaction(String tx) {
         String txid, blockhash;
