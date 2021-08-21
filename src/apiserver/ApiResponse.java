@@ -737,7 +737,14 @@ public class ApiResponse extends Task {
                 else {
                     String prevTx = jsonVin.getString("txid");
                     int prevVout = jsonVin.getInt("vout");
-                    inputs += "<tr><td>"+i+"</td><td>&nbsp;</td><td><A href=\"/transaction/"+prevTx+"\">"+prevTx+"</a></td><td>&nbsp;</td><td>vout: " + prevVout + "</td><tr>";
+                    inputs += "<tr><td>"+i+"</td><td>&nbsp;</td><td>txid: <A href=\"/transaction/"+prevTx+"\">"+prevTx+"</a></td><td>&nbsp;</td><td>vout: " + prevVout + "</td><tr>";
+                    try {
+                      String srcAddress = jsonVin.getString("address");
+                      double value = jsonVin.getDouble("value");
+                      inputs += "<tr><td>\t</td><td>&nbsp;</td><td>address: <A href=\"/addressinfo/"+srcAddress+"\">"+srcAddress+"</a></td><td>&nbsp;</td><td>value: " + round8(value) + " EAC</td><tr>";
+                    } catch (Exception ex) {
+                      inputs += "<tr><td>\t</td><td>&nbsp;</td><td>hidden source address</td><td>&nbsp;</td><td>&nbsp;</td><tr>";
+                    }
                 }
             }
             inputs += "</TABLE>";
@@ -759,19 +766,16 @@ public class ApiResponse extends Task {
                 if (txMessage.length()>0) {
                     outputs += "</br><font color=\"red\"><b>Transaction message: </b></font>" + txMessage + "</br>";
                 }
-                String IPFS_CID = json.optString("IPFS_CID");                
+                String IPFS_CID = json.optString("IPFS_CID");               
                 if (IPFS_CID.length()>0) {
                     outputs += "<form action=\"https://ipfs.io/ipfs/"+IPFS_CID+"\">"
                             + " <font color=\"red\"><b>IPFS_CID: </b></font>" + IPFS_CID
                             + " <input style=\"border-radius: 12px;\" type=\"submit\" formtarget=\"_blank\" value=\"View on ipfs.io\" />"
-                            + " <button style=\"border-radius: 12px;\" type=\"submit\" formtarget=\"_blank\" formaction=\"https://gateway.pinata.cloud/ipfs/"
-                            + IPFS_CID+"\">View on pinata.cloud</button>"
-                            + " <button style=\"border-radius: 12px;\" type=\"submit\" formtarget=\"_blank\" formaction=\"https://dweb.link/ipfs/"
-                            + IPFS_CID+"\">View on dweb.link</button>"
-                            + " <button style=\"border-radius: 12px;\" type=\"submit\" formtarget=\"_blank\" formaction=\"https://ipfs.fleek.co/ipfs/"
-                            + IPFS_CID+"\">View on fleek.co</button>"
+                            + " <button style=\"border-radius: 12px;\" type=\"submit\" formtarget=\"_blank\" formaction=\"https://gateway.pinata.cloud/ipfs/"+IPFS_CID+"\">View on pinata.cloud</button>"
+                            + " <button style=\"border-radius: 12px;\" type=\"submit\" formtarget=\"_blank\" formaction=\"https://dweb.link/ipfs/"+IPFS_CID+"\">View on dweb.link</button>"
+                            + " <button style=\"border-radius: 12px;\" type=\"submit\" formtarget=\"_blank\" formaction=\"https://ipfs.fleek.co/ipfs/"+IPFS_CID+"\">View on fleek.co</button>"
                             + "</form><br>";
-                }                
+                }
             }
         } catch (JSONException ex) {
             return error(null);
@@ -798,8 +802,8 @@ public class ApiResponse extends Task {
     private String transaction(String[] params) {
         if ( (params.length >= 3) && (params[2].length() > 0) ) {
             try {
-                String tx = client.query("getrawtransaction", params[2], 1);
-                return transaction(tx);
+                params[1] = "extx";
+                return transaction(getrawtransaction(params));
             } catch (Exception ex) {
                 return error(params);
             }
