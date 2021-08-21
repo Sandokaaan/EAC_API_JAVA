@@ -902,7 +902,8 @@ public class ApiResponse extends Task {
                     else
                         throw new JSONException("Invalid address");
                 } catch (JSONException ex) {
-                    testParam = client.query("getrawtransaction", params[2], 1);
+                    String[] tmpParams= {"", "extx", params[2]};
+                    testParam = getrawtransaction(tmpParams);
                     try {
                         JSONObject json2 = new JSONObject(testParam);
                         String txid = json2.getString("txid");
