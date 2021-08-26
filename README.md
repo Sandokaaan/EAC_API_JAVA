@@ -27,7 +27,7 @@ Instalation:
 9. Start code <code>java -jar ApiExtension.jar</code> again and let it run on a background.
 
 HTTPS/SSL configuration (optional):<br>
-10. Obtain a valid SSL certificate for the domain name of your server (for a free certificate see e.g. https://github.com/diafygi/acme-tiny).<br>
+10. Obtain a valid SSL certificate for the domain name of your server (for a free certificate see e.g. https://github.com/Sandokaaan/EAC_API_JAVA/releases/download/v.2.0.8/TrustAsia_english.pdf, https://github.com/Sandokaaan/EAC_API_JAVA/releases/download/v.2.0.8/TrustAsia_chinese.pdf or https://github.com/diafygi/acme-tiny).<br>
 11. Use <code> keytool </code> to import your SSL certificate to a <code> *.jks </code> keystore file:
 <code>
 keytool -importkeystore -deststorepass PASSWORD -destkeypass PASSWORD -destkeystore ./KEYSTOREFILE.jks -deststoretype pkcs12 -srckeystore SERVERCERTIFICATE.p12 -srcstoretype pkcs12 -srcstorepass PASSWORD -alias CERTIFICATENAME
