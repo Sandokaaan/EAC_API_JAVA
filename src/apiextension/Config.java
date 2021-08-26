@@ -35,6 +35,7 @@ public class Config {
     public int usessl = 0;
     public String sslFileName = "";
     public String sslPassword = "";
+    public boolean withExplorer = true;
     
     private Integer parseParam(String param) {
         try{
@@ -92,6 +93,11 @@ public class Config {
                     case "sslcertpassword":
                         sslPassword = params[1].trim();
                         break;                        
+                    case "explorer":
+                        n = parseParam(params[1]);
+                        if (n != null)
+                            withExplorer = (n!=0);
+                        break;                        
                 }
             }
         } catch (FileNotFoundException e) {
@@ -107,7 +113,8 @@ public class Config {
                 writer.write("apiport="+apiPortNumber+"\n");
                 writer.write("usessl=0\n");
                 writer.write("sslcertpath=PATH_TO_YOUR_JKS_CERTIFICATE\n");
-                writer.write("sslcertpassword=PASSWORD_TO_YOUR_JKS_CERTIFICATE\n");                
+                writer.write("sslcertpassword=PASSWORD_TO_YOUR_JKS_CERTIFICATE\n");
+                writer.write("explorer=1\n");                
                 writer.close();
             } catch (IOException ex) {
                 System.err.println("error in file write");
