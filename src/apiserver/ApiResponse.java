@@ -27,7 +27,8 @@ import system.Utils;
 public class ApiResponse extends Task {
     private final Config config;
     private final String baseUrl;
-    private static final String DEFAULT_THREAD_NAME = "API response task"; 
+    private static final String DEFAULT_THREAD_NAME = "API response task";
+    private static final String UNKNOWN_API_METHOD = "{\"Error\": \"Unknown API method\"}\n";
     private static final String RESPONSE_HEADER = 
         "HTTP/1.1 200 OK\n" +
         "Access-Control-Allow-Origin: *\n" + 
@@ -162,33 +163,33 @@ public class ApiResponse extends Task {
                     response = checktransaction(params);
                     break;
                 case "explorer":
-                    explorerMode = true;
-                    response = explore(params);
+                    explorerMode = config.withExplorer;
+                    response =  explorerMode ? explore(params) : UNKNOWN_API_METHOD;
                     break;
                 case "transaction":
-                    explorerMode = true;
-                    response = transaction(params);
+                    explorerMode = config.withExplorer;
+                    response = explorerMode ? transaction(params) : UNKNOWN_API_METHOD;;
                     break;
                 case "addressinfo":
-                    explorerMode = true;
-                    response = addressinfo(params);
+                    explorerMode = config.withExplorer;
+                    response = explorerMode ? addressinfo(params) : UNKNOWN_API_METHOD;;
                     break;
                 case "balance":
-                    explorerMode = true;
-                    response = balance(params);
+                    explorerMode = config.withExplorer;
+                    response = explorerMode ? balance(params) : UNKNOWN_API_METHOD;;
                     break;
                 case "search":
-                    explorerMode = true;
-                    response = search(params);
+                    explorerMode = config.withExplorer;
+                    response = explorerMode ? search(params) : UNKNOWN_API_METHOD;;
                     break;                    
                 case "doc":
                 case "help":
-                    explorerMode = true;
-                    response = doc(params);
+                    explorerMode = config.withExplorer;
+                    response = explorerMode ? doc(params) : UNKNOWN_API_METHOD;;
                     break;
                 default:
-                    explorerMode = true;
-                    response = error(params);
+                    explorerMode = config.withExplorer;
+                    response = explorerMode ? error(params) : UNKNOWN_API_METHOD;;
             }
         }
     }
@@ -1032,4 +1033,3 @@ public class ApiResponse extends Task {
     }
     
 }
-
