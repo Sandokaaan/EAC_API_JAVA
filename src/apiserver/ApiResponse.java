@@ -66,6 +66,7 @@ public class ApiResponse extends Task {
     private boolean explorerMode = false;
     private static final DecimalFormat DF = new DecimalFormat("#.#");
     private static final DecimalFormat DF8 = new DecimalFormat("#.########");
+    private boolean sslError = false;
 
     public ApiResponse(RawSocket rawSocket, RpcClient client) {
         super(DEFAULT_THREAD_NAME);
@@ -91,12 +92,13 @@ public class ApiResponse extends Task {
             throw (new IOException("Invalid http header."));
         } catch (Exception ex) {
             System.err.println("Receive API command failed. " + ex.getMessage());
+            sslError = true;
         }
     }
 
     @Override
     protected void mainTask() {
-        if (command != null) {
+        if (!sslError && command != null) {
             System.out.println("Received command: " + command);
             String[] params = command.split("/");
             //for (int i=0; i<params.length; i++)
@@ -197,7 +199,9 @@ public class ApiResponse extends Task {
     @Override
     protected void finished() {
         try {
-            if (explorerMode) {
+            if (sslError)
+                rawSocket.close();
+            else if (explorerMode) {
                 rawSocket.send(HTTP_HEADER + response);
                 rawSocket.close();
             }
