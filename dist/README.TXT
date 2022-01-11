@@ -1,0 +1,12 @@
+Requirements:
+- A fully sync EarthCoin v.2.0 node with <code>txindex=1</code> in the config file and enabled rpc calls
+- Java runtime environment v.8.0 or higher
+- Approx. 50 GB disk space for blockchain data and database operations
+
+To run this binary distribution use steps as follows:
+- Set-up parameters in the api.conf file, especially userbame and password for your RPC node.
+- Run the API using command
+    java -cp API.jar:lib/*:. main.Api
+- Wait for a few hours to get sync
+
+To safelly stop API use command "exit" in the API log console.

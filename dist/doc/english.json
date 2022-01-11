@@ -1,0 +1,239 @@
+{
+   "doc":{
+      "method":"doc",
+      "parameters":[
+         "String - name of selected API method (optional, default = all methods).",
+         "String... - any other names of API methods to display (optional)"   
+      ],
+      "return":"Documentation for the selected API method.",
+      "examples":[
+         "doc",
+         "doc/addresshistory",
+         "doc/addresshistory/getpeerinfo/getdifficulty/getblock"  
+      ]
+   },
+   "syncinfo":{
+      "method":"syncinfo",
+      "parameters":[
+      ],
+      "return":"Returns count of blocks in the database, percentage of sync and best block height.",
+      "examples":[
+         "syncinfo"
+      ]        
+   },
+   "addresshistory":{
+      "method":"addresshistory",
+      "parameters":[
+         "String - valid coin address.",
+         "Integer - limit for count of received transaction (optional, default = 10, max = 100).",
+         "Integer - limit for count of sent transaction (optional, default = 10, max = 100)."
+      ],
+      "return":"Tranaction history for an address.",
+      "examples":[
+         "addresshistory/eZbfW6QTMPU3ZgUNNFFRSviL2AzCZmF3HU",
+         "addresshistory/eZG3vU9XAPZo5L79EGpKaaCnfi74dRiYU5/2",
+         "addresshistory/ei8UhAVBRmfPk7cko3QZ2x9j5Y8qKZJx7B/1/1"   
+      ]         
+   },
+   "getblockchaininfo":{
+      "alias":"getinfo",
+      "method":"getblockchaininfo",
+      "parameters":[
+      ],
+      "return":"State info regarding blockchain processing.",
+      "examples":[
+         "getinfo",
+         "getblockchaininfo"   
+      ]  
+   },
+   "getpeerinfo":{
+      "method":"getpeerinfo",
+      "parameters":[
+      ],
+      "return":"Data about each connected network node.",
+      "examples":[
+         "getpeerinfo"   
+      ]  
+   },
+   "getdifficulty":{
+      "method":"getdifficulty",
+      "parameters":[
+      ],
+      "return":"Proof-of-work difficulty of the most current block.",
+      "examples":[
+         "getdifficulty"
+      ]         
+   },
+   "getnetworkhashps":{
+      "method":"getnetworkhashps",
+      "parameters":[
+      ],
+      "return":"Estimated network hashes per second.",
+      "examples":[
+         "getnetworkhashps"
+      ]         
+    },
+   "getblockcount":{
+      "alias":"getheight",
+      "method":"getblockcount",
+      "parameters":[
+      ],
+      "return":"Number of blocks in the longest blockchain.",
+      "examples":[
+         "getheight",
+         "getblockcount"   
+      ]
+   },
+   "getblockhash":{
+      "method":"getblockhash",
+      "parameters":[
+         "Integer - Block_height."
+      ],
+      "return":"Hash of block in best-block-chain at height provided.",
+      "examples":[
+         "getblockhash/1000"
+      ]          
+   },
+   "getbestblockhash":{
+      "method":"getbestblockhash",
+      "parameters":[
+      ],
+      "return":"Hash of the best (tip) block in the longest blockchain.",
+      "examples":[
+         "getbestblockhash"
+      ]  
+   },
+   "getblock":{
+      "alias":"block",        
+      "method":"getblock",
+      "parameters":[
+         "String - block hash.",
+         "Integer - verbosity (optional, 0-raw block, 1-without transactions, 2-with transactions, default = 1)."
+      ],
+      "return":"Tranaction history for an address.",
+      "examples":[
+         "block/ea7dd253f3ef1e1353728e92fa637368244ffcf46de9da76f57ed019182fb92f",
+         "getblock/ea7dd253f3ef1e1353728e92fa637368244ffcf46de9da76f57ed019182fb92f/0",
+         "block/ea7dd253f3ef1e1353728e92fa637368244ffcf46de9da76f57ed019182fb92f/1",
+         "getblock/ea7dd253f3ef1e1353728e92fa637368244ffcf46de9da76f57ed019182fb92f/2"   
+      ]  
+   },
+   "getrawtransaction":{
+      "method":"getrawtransaction",
+      "parameters":[
+         "String - txid hash of transaction.",
+         "Integer - verbosity (optional, 0-raw transaction, 1-decoded transaction, default = 0)."
+      ],
+      "return":"Transaction.",
+       "examples":[
+         "getrawtransaction/dfe3524e12419221bfd02105d46bdb6170b9ba7683e853b2537056ee5236b612",
+         "getrawtransaction/dfe3524e12419221bfd02105d46bdb6170b9ba7683e853b2537056ee5236b612/0",
+         "getrawtransaction/dfe3524e12419221bfd02105d46bdb6170b9ba7683e853b2537056ee5236b612/1"
+      ]       
+   },
+   "tx":{
+      "method":"tx",
+      "parameters":[
+         "String - txid hash of transaction."
+      ],
+      "return":"Decoded transaction.",
+       "examples":[
+         "tx/dfe3524e12419221bfd02105d46bdb6170b9ba7683e853b2537056ee5236b612"
+      ] 
+   },
+   "extx":{
+      "method":"extx",
+      "parameters":[
+         "String - txid hash of transaction."
+      ],
+      "return":"Decoded transaction with source addresses and values.",
+       "examples":[
+         "extx/dfe3524e12419221bfd02105d46bdb6170b9ba7683e853b2537056ee5236b612"
+      ]
+   },
+   "gettxout":{
+      "method":"gettxout",
+      "parameters":[
+         "String - txid hash of transaction.",
+         "Integer - index of transaction in the block."
+      ],
+      "return":"Unspent transaction output.",
+       "examples":[
+         "gettxout/fe69c9ac56b03ed19e49dce8face8a6a5e21741f308b64e5db032877f1148ff0/1"
+      ]
+   },
+   "sendrawtransaction":{
+      "method":"sendrawtransaction",
+      "parameters":[
+         "String - signed serialized, hex-encoded raw transaction."
+      ],
+      "return":"TXID hash of accepted transaction or rejection error message.",
+      "notes":"Try to send a signed transaction into network.",   
+      "examples":[
+         "sendrawtransaction/01000000027a09af6647a1fcc7e4361eb73184faeac16e60dedfa8ee4b81ff621648fcc04e000000006a473044022071e47c3c2dea732f521b92b0236f2e300c2a2dadd5448e1e781872886d8323660220147f1b6cebc14f2c2ca505be5b64ed99d4be0d7661b9c56b85afbac7ce47cb4e0121031329a08ec6a594d7e8a3262bdec3daf127bdbb5699c28ed58d7086b0ed60c1c3feffffffd77bc1a3849d51efea67b915bc8ea6ac805004ca13b2a1ecbc30aa642f8cdc8e000000006a473044022013dec225ba12e3d26efbda34a4bb1f2af55f0a5fc1718aaaddaa640d0325f7fc02200e6ffd85b5536c136030d60195c292854e7426338c1b1e6397c48e2a74aed668012103f09ff3cf09a4fec772c355f764c70ca3b4803671354b62fc8ff8a6a70bb37d90feffffff0202ce9300000000001976a914315e6f133f5dee949abefd68be52837d9f07d16388ac809698000000000017a9143ba5f68ee3d77d4922493f04865b9736d3463df187046e3700"
+      ]        
+   },
+   "sendcoins":{
+      "method":"sendcoins",
+      "parameters":[
+         "String - receiver address.",
+         "Decimal - value tosend.",
+         "String - sender address.",
+         "String - private key."
+      ],
+      "return":"TXID hash of accepted transaction or rejection error message.",
+      "notes":"Try to make a transaction and send it into network.",  
+      "warning":"Unsafe method. Private key is exposed. Use on your own risk.",
+      "recommendation":"Create and sign a transaction on the client side and send it using sendrawtransaction method, instead."  
+   },
+   "validateaddress":{
+      "method":"validateaddress",
+      "parameters":[
+         "String - valid coin address."
+      ],
+      "return":"Information about a coin address.",
+       "examples":[
+         "validateaddress/ENbJBDpKmD3Mdkq6w8Hv2HvubAcRwVc81T"
+      ]  
+   },
+   "getbalance":{
+      "method":"getbalance",
+      "parameters":[
+         "String - valid coin address."
+      ],
+      "return":"Total balance hold on an address.",
+       "examples":[
+         "getbalance/ENbJBDpKmD3Mdkq6w8Hv2HvubAcRwVc81T"
+      ]
+   },
+   "unspent":{
+      "alias":"utxo",  
+      "method":"unspent",
+      "parameters":[
+         "String - valid coin address..",
+         "String... - any other coin addresses (optional)."   
+      ],
+      "return":"Unspent transactions outputs of the set of addresses.",
+      "examples":[
+         "unspent/en6bCHDGejFW2VdMkKZDCfyfzRUAujh6RA",
+         "utxo/en6bCHDGejFW2VdMkKZDCfyfzRUAujh6RA",
+         "unspent/en6bCHDGejFW2VdMkKZDCfyfzRUAujh6RA/ENbJBDpKmD3Mdkq6w8Hv2HvubAcRwVc81T/eVw8ot2pDV71pmMUd7ZcbAsBXPHvQyEoXy/eZG3vU9XAPZo5L79EGpKaaCnfi74dRiYU5"
+      ]   
+   },
+   "checktransaction":{
+      "alias":"check",
+      "method":"checktransaction",
+      "parameters":[
+         "String - receiver address.",
+         "Decimal - value (optional).",
+         "String - transaction comment, must match if set (optional).",
+         "Integer - block height, must be equal or higher (optional).",   
+         "Integer - expiration time in minutes, measured from the block time at specified height (optional, default = 60)."   
+      ],
+      "return":"Decoded transaction with count of confirmations or error message.",
+      "notes":"Scan the blockchain and the memory pool for a transaction matching specified parameters.",
+      "examples":[
+         "check/ecGUjidXR9vfWZELZzJjWCpu9jbJ6guBAE/2/尝试中文/2887805/10"
+      ]   
+   }
+}
