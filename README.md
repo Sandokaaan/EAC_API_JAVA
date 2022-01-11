@@ -13,3 +13,4 @@ Advantages:
 - External database of transactions sync from the top for a more complex queries.
 
 ... under construction
+...
