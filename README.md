@@ -2,7 +2,7 @@
 A simple block explorer &amp; API node for EarthCoin (EAC) written in java
 
 Requirements:
-- A fully sync EarthCoin v.2.0 node with <code>txindex=1</code> in the config file and enabled rpc calls
+- A fully sync EarthCoin v.2.1.1 (or higher) node with <code>txindex=1</code> in the config file and enabled rpc calls
 - Java runtime environment v.8.0 or higher
 - Approx. 50 GB disk space for blockchain data and database operations
 
