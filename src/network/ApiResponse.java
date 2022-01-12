@@ -1183,9 +1183,15 @@ public class ApiResponse extends Task {
                 methods.add(params[i]);
         JSONObject selected = new JSONObject();
         jsonDoc.keySet().forEach(key -> {
-            String alias = jsonDoc.optJSONObject(key).optString("alias");
-            if (methods.contains(key) || (!alias.isBlank() && methods.contains(alias)))
-                selected.put(key, jsonDoc.get(key));
+            JSONObject subJson = jsonDoc.optJSONObject(key);
+            if (subJson != null) {
+                Boolean hasAlias = subJson.has("alias");
+                String alias = hasAlias?subJson.optString("alias"):null;
+                if (alias.length() == 0)
+                    hasAlias = false;
+                if (methods.contains(key) || (hasAlias && methods.contains(alias)))
+                    selected.put(key, jsonDoc.get(key));
+            }
         });
         if (selected.isEmpty())
             return "{\"Error\": \"Documentation not found.\"}\n";
