@@ -1187,7 +1187,7 @@ public class ApiResponse extends Task {
             if (subJson != null) {
                 Boolean hasAlias = subJson.has("alias");
                 String alias = hasAlias?subJson.optString("alias"):null;
-                if (alias.length() == 0)
+                if (hasAlias && alias.length() == 0)
                     hasAlias = false;
                 if (methods.contains(key) || (hasAlias && methods.contains(alias)))
                     selected.put(key, jsonDoc.get(key));
