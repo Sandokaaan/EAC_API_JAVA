@@ -6,13 +6,16 @@
 package system;
 
 import java.io.UnsupportedEncodingException;
+import java.lang.reflect.Field;
 import java.net.URLDecoder;
 import java.nio.ByteBuffer;
 import java.nio.Buffer;
 import java.nio.charset.Charset;
 import java.security.MessageDigest;
+import java.util.LinkedHashMap;
 import org.json.JSONArray;
 import org.json.JSONException;
+import org.json.JSONObject;
 
 /**
  *
@@ -188,6 +191,17 @@ public abstract class Utils {
         if (array == null)
             return s.replaceAll("^\"|\"$", "");   //remove quotes
         return array;
+    }
+    
+    public static void setJsonOrdered(JSONObject jsonObject){
+        try {
+            Field changeMap = jsonObject.getClass().getDeclaredField("map");
+            changeMap.setAccessible(true);
+            changeMap.set(jsonObject, new LinkedHashMap<>());
+            changeMap.setAccessible(false);
+        } catch (IllegalAccessException | IllegalArgumentException | NoSuchFieldException | SecurityException ex) {
+            System.err.println("Error - creation of an ordered json failed");
+        }
     }
 }
 

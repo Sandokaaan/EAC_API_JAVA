@@ -7,9 +7,11 @@ package database;
 
 import java.sql.SQLException;
 import java.util.TreeSet;
+import java.util.stream.Stream;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
+import static system.Utils.setJsonOrdered;
 
 /**
  *
@@ -290,136 +292,232 @@ public class DbManager {
         );
     }
     
-    public JSONArray getSendHistory(String address, int limit) {
+    public JSONArray getSentHistory(String address, int limit) {
+        System.out.println("sent");
         return selectAsJSON(
-            "SELECT "
-                + "a.address, "
-                + "o.value, "
-                + "o.vout, "
-                + "d.height, "
-                + "t.txid, "
-                + "b.time, "
-                + "b.hash, "
-                + "t.tx_id, "
-                + "d.ipfs, "
-                + "d.txcomment "
-            + "FROM ("
-                + "SELECT * FROM transactions "
-                    + "WHERE tx_id IN ("
-                        + "SELECT s.spending_tx_id AS tx_id "
-                        + "FROM ("
-                            + "SELECT * FROM addresses "
-                                + "WHERE address='" + address 
-                            + "') AS a "
-                        + "LEFT JOIN outputs AS o "
-                            + "ON a.addr_id=o.addr_id "
-                        + "LEFT JOIN spent AS s "
-                            + "ON o.tx_id=s.tx_id AND o.vout=s.vout "
-                    + ")"
-            + ") AS t "
-            + "LEFT JOIN txdetails AS d "
-                + "ON t.tx_id=d.tx_id "
-            + "LEFT JOIN blockchain AS b "
-                + "ON d.height=b.height "
-            + "LEFT JOIN outputs AS o "
-                + "ON t.tx_id=o.tx_id "
-            + "LEFT JOIN addresses AS a "
-                + "ON o.addr_id=a.addr_id "
-            + "LIMIT " + limit
+            "SELECT " +
+                "'sent' AS type, " +
+                "t.txid, " +
+                "b.hash, " +
+                "d.height, " +    
+                "b.time,"  +   
+                "d.txcomment, " +
+                "d.ipfs, " +
+                "o2.vout, " +
+                "a2.address, " + 
+                "o2.value " +    
+            "FROM (" +
+                "SELECT * FROM " + TRANSACTIONS + " " +
+                    "WHERE tx_id IN (" +
+                        "SELECT s.spending_tx_id AS tx_id " +
+                        "FROM (" +
+                            "SELECT * FROM " + ADDRESSES + " " +
+                                "WHERE address='" + address +
+                            "') AS a " +
+                        "LEFT JOIN " + OUTPUTS + " AS o " +
+                            "ON a.addr_id=o.addr_id " +
+                        "LEFT JOIN " + SPENT + " AS s " +
+                            "ON o.tx_id=s.tx_id AND o.vout=s.vout " +
+                    ")" +
+            ") AS t " +
+            "LEFT JOIN " + TXDETAILS + " AS d " +
+                "ON t.tx_id=d.tx_id " +
+            "LEFT JOIN " + BLOCKS + " AS b " +
+                "ON d.height=b.height " +
+            "LEFT JOIN " + OUTPUTS + " AS o2 " +
+                "ON t.tx_id=o2.tx_id " +
+            "LEFT JOIN " + ADDRESSES + " AS a2 " +
+                "ON o2.addr_id=a2.addr_id " +
+            "ORDER BY " +
+                "d.height DESC, t.txid, o2.vout ASC " +                        
+            "LIMIT " + limit        
+
         );
     }
     
     public JSONArray getReceivedHistory(String address, int limit) {
+        System.out.println("received");
         return selectAsJSON(
-            "SELECT "
-                + "a.address, "
-                + "o.value, "
-                + "o.vout, "
-                + "d.height, "
-                + "t.txid, "
-                + "b.time, "
-                + "b.hash, "
-                + "s.spending_tx_id, "
-                + "d.ipfs, "
-                + "d.txcomment, "
-                + "d.coinbase "
-            + "FROM ("
-                + "SELECT * "
-                + "FROM addresses "
-                    + "WHERE address='" + address 
-            + "') AS a "
-            + "LEFT JOIN outputs AS o "
-                + "ON a.addr_id=o.addr_id "
-            + "LEFT JOIN txdetails AS d "
-                + "ON o.tx_id=d.tx_id "
-            + "LEFT JOIN spent AS s "
-                + "ON o.tx_id=s.tx_id AND o.vout=s.vout "
-            + "LEFT JOIN transactions AS t "
-                + "ON o.tx_id=t.tx_id "
-            + "LEFT JOIN blockchain AS b "
-                + "ON d.height=b.height "
-            + "LIMIT " + limit    
+            "SELECT " +
+                "CASE WHEN coinbase=true THEN 'mined' ELSE 'received' END AS type, " +
+                "a.address, " +
+                "o.value, " +
+                "CASE WHEN spending_tx_id IS NULL THEN false ELSE true END AS spent," +    
+                "t.txid, " +
+                "o.vout, " +
+                "b.time, " +
+                "d.height, " +
+                "b.hash, " +
+                "d.txcomment, " +
+                "d.ipfs " +    
+            "FROM (" +
+                "SELECT * " +
+                "FROM " + ADDRESSES + " " +
+                    "WHERE address='" + address +
+            "') AS a " +
+            "LEFT JOIN " + OUTPUTS + " AS o " +
+                "ON a.addr_id=o.addr_id " +
+            "LEFT JOIN " + TXDETAILS + " AS d " +
+                "ON o.tx_id=d.tx_id " +
+            "LEFT JOIN " + SPENT + " AS s " +
+                "ON o.tx_id=s.tx_id AND o.vout=s.vout " +
+            "LEFT JOIN " + TRANSACTIONS + " AS t " +
+                "ON o.tx_id=t.tx_id " +
+            "LEFT JOIN " + BLOCKS + " AS b " +
+                "ON d.height=b.height " +
+            "ORDER BY " +
+                "d.height DESC, t.txid, o.vout ASC " +        
+            "LIMIT " + limit + "; "
         );
     }
     
-    public JSONArray rearrange(JSONArray received, JSONArray send){
+    public JSONArray rearrange(JSONArray received, JSONArray sent){
+        System.out.println("rearrange");
         JSONArray rts = new JSONArray();
         try {
-            int nReceived = received.length();
-            int nSend = send.length();
-            for (Object o : received) {
-                JSONObject json = (JSONObject)o;
-                if (json.has("coinbase")) {
-                    json.remove("coinbase");
-                    json.put("type", "mined");
+            received.forEach((Object item) -> {
+                rts.put(item);
+            });
+            JSONObject tx = new JSONObject();
+            setJsonOrdered(tx);
+            JSONArray outputs = new JSONArray();
+            String lastTxid = "";
+            for (Object o : sent) {
+                JSONObject jsonItem = (JSONObject)o;
+                String txid = jsonItem.optString("txid", "");
+                if (txid.length()>0 && !(lastTxid.equals(txid))) {
+                    if (outputs.length()>0) {
+                        tx.put("outputs", outputs);
+                        rts.put(tx);
+                        outputs = new JSONArray();
+                    }
+                    tx = new JSONObject();
+                    setJsonOrdered(tx);
+                    lastTxid = txid;
+                    Object[] items = Stream
+                        .of("type", "txid", "time", "height", "hash", "txcomment", "ipfs")
+                        .filter(jsonItem::has).toArray();
+                    for (Object item : items) {
+                        String key = (String)item;
+                        tx.put(key, jsonItem.get(key));
+                    }                        
                 }
-                else
-                    json.put("type", "received");
-                if (json.has("spending_tx_id")) {
-                    json.remove("spending_tx_id");
-                    json.put("spent", true);
+                Object[] items = {"address", "value", "vout"};
+                JSONObject output = new JSONObject();
+                    setJsonOrdered(output);
+                for (Object item : items) {
+                    String key = (String)item;
+                    output.put(key, jsonItem.get(key));
                 }
-                else
-                    json.put("spent", false);
-                rts.put(json);
+                outputs.put(output);                
             }
-            JSONObject tmp = new JSONObject();
-            for (Object o : send) {
-                JSONObject json = (JSONObject)o;
-                String tx_id = "" + json.getInt("tx_id");
-                json.remove("tx_id");
-                JSONObject tx = tmp.has(tx_id) ? 
-                                tmp.optJSONObject(tx_id) : 
-                                new JSONObject();
-                JSONArray outs = tx.has("outputs") ?
-                                 tx.getJSONArray("outputs") :
-                                 new JSONArray();
-                if (!tx.has("txid"))
-                    tx.put("txid", json.get("txid"));
-                json.remove("txid");
-                if (!tx.has("hash"))
-                    tx.put("hash", json.get("hash"));
-                json.remove("hash");
-                if (!tx.has("height"))
-                    tx.put("height", json.get("height"));
-                json.remove("height");
-                if (!tx.has("time"))
-                    tx.put("time", json.get("time"));
-                json.remove("time");
-                if (!tx.has("type"))
-                    tx.put("type", "send");
-                outs.put(json);
-                tx.put("outputs", outs);
-                tmp.put(tx_id, tx);
+            if (outputs.length()>0) {
+                tx.put("outputs", outputs);
+                rts.put(tx);
             }
-            tmp.keySet().forEach(key -> {
-                rts.put(tmp.getJSONObject(key));
-            }); 
         } catch(JSONException ex) {
             // log it or do nothing
+            System.err.println("Error - rearrange " + ex.getMessage());
         }
         return rts;
     }  
     
+    public JSONObject addressStatReceived(String address) {
+        return selectFirstAsJSON(
+            "SELECT " +
+                "COUNT(coinbase) AS mined, " +
+                "COUNT(o.tx_id) AS inputs, " +
+                "SUM(value) AS total_value, " +
+                "SUM(CASE WHEN coinbase=true THEN 0 ELSE value END) AS received_value, " +
+                "MIN(d.height) AS low_block, " +
+                "MAX(d.height) AS high_block, " +
+                "COUNT(ipfs) AS with_ipfs, " +
+                "COUNT(txcomment) AS with_txcomment, " +
+                "MIN(time) AS low_time, " +     
+                "MAX(time) AS high_time " +
+            "FROM (SELECT '" +
+                address + "' AS address) AS param " +
+            "NATURAL JOIN " + ADDRESSES + " AS a " +
+            "NATURAL JOIN " + OUTPUTS + " AS o " +        
+            "NATURAL JOIN " + TXDETAILS + " AS d " +
+            "NATURAL JOIN " + BLOCKS + " AS b; "        
+        );
+    }
+
+    public JSONObject addressStatSent(String address) {
+        return selectFirstAsJSON(
+            "SELECT " +
+                "COUNT(spending_tx_id) AS outputs, " +
+                "COUNT(distinct spending_tx_id) AS transactions, " +
+                "SUM(value) AS total_value, " +
+                "MIN(d.height) AS low_block, " +
+                "MAX(d.height) AS high_block, " +
+                "COUNT(ipfs) AS with_ipfs, " +
+                "COUNT(txcomment) AS with_txcomment, " +
+                "MIN(time) AS low_time, " +     
+                "MAX(time) AS high_time " +
+            "FROM (SELECT '" +
+                address + "' AS address) AS param " +
+            "NATURAL JOIN " + ADDRESSES + " AS a " +
+            "NATURAL JOIN " + OUTPUTS + " AS o " +   
+            "NATURAL JOIN " + SPENT + " AS s " +        
+            "INNER JOIN " + TXDETAILS + " AS d " +
+                "ON s.spending_tx_id=d.tx_id " +
+            "NATURAL JOIN " + BLOCKS + " AS b; "        
+        );
+    }    
+    
+    public JSONObject addressStatistics(String address) {
+        JSONObject sentStat = addressStatSent(address);
+        JSONObject recStat = addressStatReceived(address);
+        JSONObject rtsJson = new JSONObject();
+        setJsonOrdered(rtsJson);
+        try {
+            int nInputs = recStat.optInt("inputs", 0);
+            int nMined = recStat.optInt("mined", 0);
+            int nReceived = nInputs - nMined;
+            double totalInputValue = recStat.optDouble("total_value", 0);
+            double receivedValue = recStat.optDouble("received_value", 0);
+            double minedValue = totalInputValue - receivedValue;
+            int lowBlockReceived = recStat.optInt("low_block", 0);
+            int highBlockReceived = recStat.optInt("high_block", 0);
+            int lowBlockSent = sentStat.optInt("low_block", 0);
+            int highBlockSent = sentStat.optInt("high_block", 0);
+            int lowTimeReceived = recStat.optInt("low_time", 0);
+            int highTimeReceived = recStat.optInt("high_time", 0);
+            int lowTimeSent = sentStat.optInt("low_time", 0);
+            int highTimeSent = sentStat.optInt("high_time", 0);
+            int nReceivedWithIpfs = recStat.optInt("with_ipfs", 0);
+            int nReceivedWithComment = recStat.optInt("with_txcomment", 0);
+            int nOutputs = sentStat.optInt("outputs", 0);
+            int nSent = sentStat.optInt("transactions", 0);
+            double sentValue = sentStat.optDouble("total_value", 0);
+            int nSentWithIpfs = sentStat.optInt("with_ipfs", 0);
+            int nSentWithComment = sentStat.optInt("with_txcomment", 0);
+            double balance = totalInputValue - sentValue;
+            // results shown
+            rtsJson.put("address", address);
+            rtsJson.put("balance", balance);
+            rtsJson.put("transaction_count", nReceived + nSent);
+            rtsJson.put("received", nReceived);
+            rtsJson.put("sent", nSent);
+            rtsJson.put("mined", nMined);
+            rtsJson.put("unspent_outputs", nInputs - nOutputs);
+            rtsJson.put("received_value", receivedValue);
+            rtsJson.put("sent_value", sentValue);
+            rtsJson.put("mined_value", minedValue);
+            rtsJson.put("low_block", Math.min(lowBlockSent, lowBlockReceived));
+            rtsJson.put("high_block", Math.max(highBlockSent, highBlockReceived));
+            rtsJson.put("low_time", Math.min(lowTimeSent, lowTimeReceived));
+            rtsJson.put("high_time", Math.max(highTimeSent, highTimeReceived));
+            rtsJson.put("received_comments", nReceivedWithComment);
+            rtsJson.put("received_ipfs", nReceivedWithIpfs);
+            rtsJson.put("sent_comments", nSentWithComment);
+            rtsJson.put("sent_ipfs", nSentWithIpfs);
+        } catch (JSONException ex) {
+            System.err.println("Error - addressStatistics " + ex.getMessage());
+        }
+        return rtsJson;
+    }
 }
     

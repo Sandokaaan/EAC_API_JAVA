@@ -43,7 +43,7 @@ public class Api {
         while (true) {
             String s = sc.nextLine();
             if (s.length() == 0) {
-                System.out.println("This is log-console of JAVA-API. White 'exit' to safely close database and exit API");
+                System.out.println("This is log-console of JAVA-API. Write 'exit' to safely close database and exit API");
                 continue;
             }
             if (s.equals("exit"))
@@ -54,7 +54,7 @@ public class Api {
                 String[] slices = s.split(" ");
                 if (slices.length == 2) {
                     JSONArray received = dbm.getReceivedHistory(slices[1], 10);
-                    JSONArray send = dbm.getSendHistory(slices[1], 10);
+                    JSONArray send = dbm.getSentHistory(slices[1], 10);
                     System.out.println(dbm.rearrange(received, send));
                 }
                 else

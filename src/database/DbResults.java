@@ -11,6 +11,7 @@ import org.json.JSONObject;
 import java.sql.ResultSetMetaData;
 
 import java.util.TreeSet;
+import static system.Utils.setJsonOrdered;
 
 /**
  *
@@ -29,6 +30,7 @@ public class DbResults {
             JSONArray rts = new JSONArray();
             while (rs.next()) {
                 JSONObject line = new JSONObject();
+                setJsonOrdered(line);
                 for (int i=0; i<cols; i++)
                     line.put(colNames[i], rs.getObject(i+1));
                 rts.put(line);

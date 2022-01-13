@@ -229,6 +229,9 @@ public class ApiResponse extends Task {
                     explorerMode = config.withExplorer;
                     response = explorerMode ? addressinfo(params) : UNKNOWN_API_METHOD;
                     break;
+                case "addrstat":
+                    response = addressStatistic(params);
+                    break;
                 case "balance":
                     explorerMode = config.withExplorer;
                     response = explorerMode ? balance(params) : UNKNOWN_API_METHOD;
@@ -238,6 +241,7 @@ public class ApiResponse extends Task {
                     response = explorerMode ? search(params) : UNKNOWN_API_METHOD;
                     break;   
                 case "addresshistory":
+                case "txbyaddr":    
                     response = getAddresshistory(params);
                     break;
                 case "syncinfo":
@@ -245,6 +249,9 @@ public class ApiResponse extends Task {
                     break;
                 case "doc":
                     response = apidoc(params);
+                    break;
+                case "getblockheight":    
+                    response = getblockheight(params);
                     break;
                 case "help":
                     explorerMode = config.withExplorer;
@@ -1136,7 +1143,7 @@ public class ApiResponse extends Task {
 
     private String getAddresshistory(String[] params) {
         if ((params.length<3) || (params[2].length()==0))
-            return "{\"Error\": \"API method requires an parameter\"}\n";
+            return MISSING_PARAMETER;
         String address = params[2];
         int limitR = 10;
         int limitS = 10;
@@ -1161,8 +1168,8 @@ public class ApiResponse extends Task {
             limitS = limitR;
         
         JSONArray received = dbManager.getReceivedHistory(address, limitR);
-        JSONArray send = dbManager.getSendHistory(address, limitS);
-        return dbManager.rearrange(received, send).toString();
+        JSONArray sent = dbManager.getSentHistory(address, limitS);
+        return dbManager.rearrange(received, sent).toString();
     }
 
     private String getSyncinfo() {
@@ -1172,8 +1179,8 @@ public class ApiResponse extends Task {
     @SuppressWarnings("UseSpecificCatch")
     private String apidoc(String[] params) {
         try {
-            if (params.length<3)
-                return jsonDoc.toString();  // all methods
+            if (params.length<2 || (params.length==2 && params[1].equals("doc")))
+                return jsonDoc.toString();  // show documentation of all methods
         } catch (Exception ex) {
             return "{\"Error\": \"Documentation is missing or damaged.\"}\n";
         }
@@ -1187,19 +1194,36 @@ public class ApiResponse extends Task {
             if (subJson != null) {
                 Boolean hasAlias = subJson.has("alias");
                 String alias = hasAlias?subJson.optString("alias"):null;
-                if (hasAlias && alias.length() == 0)
+                if (hasAlias && alias!=null && alias.length() == 0)
                     hasAlias = false;
                 if (methods.contains(key) || (hasAlias && methods.contains(alias)))
                     selected.put(key, jsonDoc.get(key));
             }
         });
         if (selected.isEmpty())
-            return "{\"Error\": \"Documentation not found.\"}\n";
+            return "{\"Error\": \"Method not found.\"}\n";
         return selected.toString();
+    }
+
+    private String addressStatistic(String[] params) {
+        if ((params.length<3) || (params[2].length()==0))
+            return MISSING_PARAMETER;
+        String address = params[2];
+        return dbManager.addressStatistics(address).toString();
+    }
+
+    private String getblockheight(String[] params) {
+        if ( (params.length >= 3) && (params[2].length() > 0) ) {
+            int height = dbManager.getBlockHeight(params[2]);
+            if (height > 0)
+                return "{\"Height\": " + height + "}\n";
+        }        
+        return "{\"Error\": \"Height not knouwn.\"}\n";
     }
 }
 
-// todo - hledani aliasů ?
-// více metod v helpu ?
-// opt + když není, ignorovat--- napsat, že není
-// 
+
+
+// do configu dát IPFS bránu?
+// getblockheight (aliases: blockheight, getblockindex, blockindex)
+// txbyaddr - do it compatible with API v.1?

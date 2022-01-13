@@ -23,6 +23,7 @@
    },
    "addresshistory":{
       "method":"addresshistory",
+      "alias":"txbyaddr",
       "parameters":[
          "String - valid coin address.",
          "Integer - limit for count of received transaction (optional, default = 10, max = 100).",
@@ -235,5 +236,27 @@
       "examples":[
          "check/ecGUjidXR9vfWZELZzJjWCpu9jbJ6guBAE/2/尝试中文/2887805/10"
       ]   
+   },
+   "addrstat":{
+      "method":"addrstat",
+      "parameters":[
+         "String - valid coin address."
+      ],
+      "return":"Count of transctions, balance and other simple statistics of an address.",
+       "examples":[
+         "addrstat/ESKt7fPiY1KBJpdEzfjD3XQaf6DXrU6YhM",
+         "addrstat/eW1mCXiSfy4HfuBhVRfQ4kedviUcRLZd3T"   
+      ]
+   },
+   "getblockheight":{
+      "method":"getblockheight",
+      "parameters":[
+         "String - hash of a block."
+      ],
+      "return":"Height of the block or error message if failed.",
+       "examples":[
+         "getblockheight/d4718bece67820d8454e506ebd03217f181e9046bdecf18ca7e59b5da41c353c"
+      ]
    }
 }
+
