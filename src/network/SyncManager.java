@@ -174,22 +174,24 @@ public class SyncManager extends Task {
     }
     
     private void checkIntegrity() {
+        System.out.println("Check integrity...");
         int lowBlock = dbManager.getLowestHeight();
+        int bestBlock = dbManager.getBestHeight();
         if (lowBlock>0) {
             System.out.println("checkIntegrity() - low block is " + lowBlock + " - requested ");
             addBlockRequest(lowBlock-1);
         }
-        int totalBlocks = dbManager.getBlockCount();
-        int bestBlock = dbManager.getBestHeight();
+        TreeSet<Object> mostRecentBlocks = dbManager.getMostFreshHeights();
+        mostRecentBlocks.stream().forEach( o -> blocks.add((int)o));
+        System.out.println("Deep check for blocks " + mostRecentBlocks.last() + " - " + mostRecentBlocks.first());
         System.out.println("checkIntegrity() - block range " + lowBlock + " - " + bestBlock);
         TreeSet<Object> blocksInDb = dbManager.getAllHeights();
         IntStream
             .rangeClosed(lowBlock, bestBlock)
             .filter( o -> !blocksInDb.contains(o) )
-            .forEach( o -> blocks.add(o)
-        );
+            .forEach( o -> blocks.add(o));
         System.out.println("checkIntegrity() - finished");
     }
-    
+
 }
 

@@ -23,6 +23,7 @@
    },
    "addresshistory":{
       "method":"addresshistory",
+      "alias":"txbyaddr",
       "parameters":[
          "String - valid coin address.",
          "Integer - limit for count of received transaction (optional, default = 10, max = 100).",
@@ -33,6 +34,36 @@
          "addresshistory/eZbfW6QTMPU3ZgUNNFFRSviL2AzCZmF3HU",
          "addresshistory/eZG3vU9XAPZo5L79EGpKaaCnfi74dRiYU5/2",
          "addresshistory/ei8UhAVBRmfPk7cko3QZ2x9j5Y8qKZJx7B/1/1"   
+      ]         
+   },
+   "addresshistorybyheight":{
+      "method":"addresshistorybyheight",
+      "parameters":[
+         "String - valid coin address.",
+         "Integer - the lowest block (optional, default = maxheight-10080).",
+         "Integer - the highest block (optional, default = maxheight).",
+         "Integer - bitmask of transaction type (optional, 0-none, 1-received, 2-sent, 4-mined, default = 3)."
+      ],
+      "return":"Tranaction history for an address in a block height range.",
+      "examples":[
+         "addresshistorybyheight/eZbfW6QTMPU3ZgUNNFFRSviL2AzCZmF3HU/3622661/3632645/7",
+         "addresshistorybyheight/eZbfW6QTMPU3ZgUNNFFRSviL2AzCZmF3HU/3622661/3632645/1",
+         "addresshistorybyheight/eZbfW6QTMPU3ZgUNNFFRSviL2AzCZmF3HU/3622661/3632645/2"   
+      ]         
+   },
+   "addresshistorybytime":{
+      "method":"addresshistorybytime",
+      "parameters":[
+         "String - valid coin address.",
+         "Integer - the lowest time (optional, default = now-week).",
+         "Integer - the highest time (optional, default = now).",
+         "Integer - bitmask of transaction type (optional, 0-none, 1-received, 2-sent, 4-mined, default = 3)."
+      ],
+      "return":"Tranaction history for an address in a timestamp range.",
+      "examples":[
+         "addresshistorybytime/eZbfW6QTMPU3ZgUNNFFRSviL2AzCZmF3HU/1629041582/1629648936/7",
+         "addresshistorybytime/eZbfW6QTMPU3ZgUNNFFRSviL2AzCZmF3HU/1629041582/1629648936/1",
+         "addresshistorybytime/eZbfW6QTMPU3ZgUNNFFRSviL2AzCZmF3HU/1629041582/1629648936/2"   
       ]         
    },
    "getblockchaininfo":{
@@ -235,5 +266,27 @@
       "examples":[
          "check/ecGUjidXR9vfWZELZzJjWCpu9jbJ6guBAE/2/尝试中文/2887805/10"
       ]   
+   },
+   "addrstat":{
+      "method":"addrstat",
+      "parameters":[
+         "String - valid coin address."
+      ],
+      "return":"Count of transctions, balance and other simple statistics of an address.",
+       "examples":[
+         "addrstat/ESKt7fPiY1KBJpdEzfjD3XQaf6DXrU6YhM",
+         "addrstat/eW1mCXiSfy4HfuBhVRfQ4kedviUcRLZd3T"   
+      ]
+   },
+   "getblockheight":{
+      "method":"getblockheight",
+      "parameters":[
+         "String - hash of a block."
+      ],
+      "return":"Height of the block or error message if failed.",
+       "examples":[
+         "getblockheight/d4718bece67820d8454e506ebd03217f181e9046bdecf18ca7e59b5da41c353c"
+      ]
    }
 }
+

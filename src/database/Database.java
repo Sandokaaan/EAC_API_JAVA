@@ -10,9 +10,15 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.TreeSet;
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
 import system.Config;
+import static system.Utils.setJsonOrdered;
 
 /**
  *
@@ -71,9 +77,7 @@ public class Database {
      * @return 
      */
     public int command(String sql) {
-        Statement stmt;
-        try {
-           stmt = connection.createStatement();
+        try (Statement stmt = connection.createStatement()){
            return stmt.executeUpdate(sql);
        } catch (SQLException ex) {
            System.err.println(ex.getMessage());
@@ -82,8 +86,7 @@ public class Database {
     }
     
     public int commandWithParams(String sql, Object[] params) {
-        try {
-            PreparedStatement ps = connection.prepareStatement(sql);
+        try (PreparedStatement ps = connection.prepareStatement(sql)) {
             int index = 1;
             for(Object param : params) 
                 ps.setObject(index++, param);
@@ -100,12 +103,11 @@ public class Database {
      * @return
      */
     public int count(String table) {
-        try {
-            PreparedStatement ps =
-                connection.prepareStatement("SELECT COUNT(*) FROM " + table);
-            ResultSet result = ps.executeQuery();
-            result.next();
-            return result.getInt(1);
+        try (PreparedStatement ps = connection.prepareStatement("SELECT COUNT(*) FROM " + table)) {
+            try (ResultSet result = ps.executeQuery()) {
+                result.next();
+                return result.getInt(1);
+            }
         } catch (SQLException ex) {
             return 0;
         }
@@ -131,14 +133,104 @@ public class Database {
        } 
     }
 
-    public ResultSet select(String sql) {
+    public JSONArray select(String sql) {
         try {
-            PreparedStatement ps = connection.prepareStatement(sql, ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY);
-            ResultSet rs = ps.executeQuery();
-            return rs;
+            try (PreparedStatement ps = connection.prepareStatement(sql, ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY)) {
+                try (ResultSet rs = ps.executeQuery()) {
+                    return JSONArrayOf(rs);
+                }
+            }
         } catch (SQLException ex) {
             System.err.println(ex.getMessage());
-            return null;
+            return new JSONArray();
+        }        
+    }
+    
+    public JSONObject selectOne(String sql) {
+        try {
+            try (PreparedStatement ps = connection.prepareStatement(sql, ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY)) {
+                try (ResultSet rs = ps.executeQuery()) {
+                    return JSONObjectOf(rs);
+                }
+            }
+        } catch (SQLException ex) {
+            System.err.println(ex.getMessage());
+            return new JSONObject();
+        }        
+    }
+    
+    
+    public TreeSet<Object> selectSet(String sql) {
+        //System.out.println(sql);
+        try {
+            try (PreparedStatement ps = connection.prepareStatement(sql, ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY)) {
+                try (ResultSet rs = ps.executeQuery()) {
+                    return TreeSetOf(rs);
+                }
+            }
+        } catch (SQLException ex) {
+            System.err.println(ex.getMessage());
+            return new TreeSet<>();
+        }        
+    }
+    
+    private TreeSet<Object> TreeSetOf(ResultSet rs){
+        TreeSet<Object> rts = new TreeSet<>();
+        try {
+            while (rs.next()) {
+                rts.add(rs.getObject(1));
+            }
+            return rts;
+        } catch (SQLException ex) {            
+            System.err.println("Database::TreeSetOf(JSONArray arr) - " + ex.getMessage());
+            return rts;
+        }
+    }
+    
+    private String[] getColNames(ResultSet rs) throws SQLException {
+        ResultSetMetaData rsmd = rs.getMetaData();
+        int cols = rsmd.getColumnCount();
+        String[] colNames = new String[cols];
+        for(int i=0; i<cols; i++)
+            colNames[i] = rsmd.getColumnLabel(i+1).toLowerCase();  // to show alliasses
+        return colNames;
+            
+    }
+    
+    private JSONArray JSONArrayOf(ResultSet rs){
+        try {
+            String[] colNames = getColNames(rs);
+            int cols = colNames.length;
+            JSONArray rts = new JSONArray();
+            while (rs.next()) {
+                JSONObject line = new JSONObject();
+                setJsonOrdered(line);
+                for (int i=0; i<cols; i++)
+                    line.put(colNames[i], rs.getObject(i+1));
+                rts.put(line);
+            }
+            return rts;
+        } catch (SQLException | JSONException ex) {
+            System.err.println("Database::JSONArrayOf(ResultSet rs) - " + ex.getMessage());
+            return new JSONArray();
+        }
+    }
+    
+    private JSONObject JSONObjectOf(ResultSet rs){
+        try {
+            String[] colNames = getColNames(rs);
+            int cols = colNames.length;
+            if (rs.next()) {
+                JSONObject line = new JSONObject();
+                setJsonOrdered(line);
+                for (int i=0; i<cols; i++)
+                    line.put(colNames[i], rs.getObject(i+1));
+                return line;
+            }
+            return new JSONObject();
+        } catch (SQLException | JSONException ex) {
+            System.err.println("Database::JSONArrayOf(ResultSet rs) - " + ex.getMessage());
+            return new JSONObject();
         }        
     }
     

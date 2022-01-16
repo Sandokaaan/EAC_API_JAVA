@@ -253,6 +253,12 @@ public class ApiResponse extends Task {
                 case "getblockheight":    
                     response = getblockheight(params);
                     break;
+                case "addresshistorybyheight":
+                    response = getAddresshistoryByHeight(params);
+                    break;                    
+                case "addresshistorybytime":
+                    response = getAddresshistoryByTime(params);
+                    break;                    
                 case "help":
                     explorerMode = config.withExplorer;
                     response = explorerMode ? doc(params) : apidoc(params);
@@ -267,6 +273,7 @@ public class ApiResponse extends Task {
     @Override
     protected void finished() {
         try {
+            dbManager.close();
             if (sslError)
                 rawSocket.close();
             else if (explorerMode) {
@@ -453,7 +460,7 @@ public class ApiResponse extends Task {
             return MISSING_PARAMETER;
         JSONObject jsonUnspent = getUnspentBalanceInternal(params[2]);
         double balance = jsonUnspent.optDouble("total_amount", 0);        
-        String rts = "{\"Balance\": " + balance + "}\n";
+        String rts = "{\"balance\": " + balance + "}\n";
         return rts;
     }
     
@@ -1216,9 +1223,64 @@ public class ApiResponse extends Task {
         if ( (params.length >= 3) && (params[2].length() > 0) ) {
             int height = dbManager.getBlockHeight(params[2]);
             if (height > 0)
-                return "{\"Height\": " + height + "}\n";
+                return ""+height;
         }        
         return "{\"Error\": \"Height not knouwn.\"}\n";
+    }
+
+    private int validateHeight(int height, int bestHeight) {
+        if (height<0)
+            return 0;
+        if (height>bestHeight)
+            return bestHeight;
+        return height;
+    }
+    
+    private String getAddresshistoryByHeight(String[] params) {
+        if ((params.length<3) || (params[2].length()==0))
+            return MISSING_PARAMETER;
+        try {
+            int bestHeight = dbManager.getBestHeight();
+            String address = params[2];
+            int bitmask = (params.length>5) ? Integer.parseInt(params[5]) : 3;
+            int highBlock = (params.length>4) ? Integer.parseInt(params[4]) 
+                : bestHeight;
+            int lowBlock = (params.length>3) ? Integer.parseInt(params[3]) 
+                : bestHeight - 10080;
+            lowBlock = validateHeight(lowBlock, bestHeight);
+            highBlock = validateHeight(highBlock, bestHeight);
+            return dbManager.getHistorryByHeight(address, bitmask, lowBlock, highBlock);
+        } catch (NumberFormatException ex) {
+            return UNKNOWN_ERROR;
+        }
+    }
+
+    private int validateTime(int time, int minTime, int maxTime) {
+        if (time<minTime)
+            return minTime;
+        if (time>maxTime)
+            return maxTime;
+        return time;
+    }    
+    
+    private String getAddresshistoryByTime(String[] params) {
+        if ((params.length<3) || (params[2].length()==0))
+            return MISSING_PARAMETER;
+        try {
+            int minTime = dbManager.getLowestTime();
+            int maxTime = dbManager.getHighestTime();
+            String address = params[2];
+            int bitmask = (params.length>5) ? Integer.parseInt(params[5]) : 3;
+            int highTime = (params.length>4) ? Integer.parseInt(params[4]) 
+                : maxTime;
+            int lowTime = (params.length>3) ? Integer.parseInt(params[3]) 
+                : maxTime - 10080*60;
+            lowTime = validateTime(lowTime, minTime, maxTime);
+            highTime = validateTime(highTime, minTime, maxTime);
+            return dbManager.getHistorryByTime(address, bitmask, lowTime, highTime);
+        } catch (NumberFormatException ex) {
+            return UNKNOWN_ERROR;
+        }
     }
 }
 
