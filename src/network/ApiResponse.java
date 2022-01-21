@@ -5,7 +5,7 @@
  */
 package network;
 
-import database.DbManager;
+import database.DbReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -72,7 +72,6 @@ public class ApiResponse extends Task {
     private final static JSONObject jsonDoc = loadJsonDoc();
     private final RawSocket rawSocket;
     private final RpcClient client;
-    private DbManager dbManager;
     private String command;
     private String response;
     private boolean explorerMode = false;
@@ -129,7 +128,7 @@ public class ApiResponse extends Task {
         super(DEFAULT_THREAD_NAME);
         this.rawSocket = rawSocket;
         this.client = client;
-        dbManager = null;
+//        dbManager = null;
         command = null;
         response = null;
         config = Config.getConfig();
@@ -139,7 +138,6 @@ public class ApiResponse extends Task {
     @SuppressWarnings("UseSpecificCatch")
     protected void initialization() {
         try {
-            dbManager = new DbManager();
             String httprequest = rawSocket.receiveTextLine();
             String[] params = httprequest.split(" ");
             if (params.length == 3) {
@@ -250,15 +248,16 @@ public class ApiResponse extends Task {
                 case "doc":
                     response = apidoc(params);
                     break;
-                case "getblockheight":    
+                case "getblockheight":
+                case "getblockindex":    
                     response = getblockheight(params);
                     break;
                 case "addresshistorybyheight":
                     response = getAddresshistoryByHeight(params);
-                    break;                    
+                    break;          
                 case "addresshistorybytime":
                     response = getAddresshistoryByTime(params);
-                    break;                    
+                    break;          
                 case "help":
                     explorerMode = config.withExplorer;
                     response = explorerMode ? doc(params) : apidoc(params);
@@ -272,8 +271,8 @@ public class ApiResponse extends Task {
 
     @Override
     protected void finished() {
+        //System.err.println(response); /// debug
         try {
-            dbManager.close();
             if (sslError)
                 rawSocket.close();
             else if (explorerMode) {
@@ -1173,14 +1172,21 @@ public class ApiResponse extends Task {
             }
         } else
             limitS = limitR;
-        
-        JSONArray received = dbManager.getReceivedHistory(address, limitR);
-        JSONArray sent = dbManager.getSentHistory(address, limitS);
-        return dbManager.rearrange(received, sent).toString();
+        try (DbReader dbReader = new DbReader()) {
+            return dbReader.getHistorry(address, limitR, limitS);
+        } catch (Exception ex) {
+            System.err.println("ApiResponse: " + ex.getMessage());
+            return UNKNOWN_ERROR;
+        }
     }
 
     private String getSyncinfo() {
-        return dbManager.getSyncStat().toString();
+        try (DbReader dbReader = new DbReader()) {
+            return dbReader.getSyncStat().toString();
+        } catch (Exception ex) {
+            System.err.println("ApiResponse: " + ex.getMessage());
+            return UNKNOWN_ERROR;
+        }
     }
 
     @SuppressWarnings("UseSpecificCatch")
@@ -1216,16 +1222,26 @@ public class ApiResponse extends Task {
         if ((params.length<3) || (params[2].length()==0))
             return MISSING_PARAMETER;
         String address = params[2];
-        return dbManager.addressStatistics(address).toString();
+        try (DbReader dbReader = new DbReader()) {
+            return dbReader.addressStatistics(address).toString();
+        } catch (Exception ex) {
+            System.err.println("ApiResponse: " + ex.getMessage());
+            return UNKNOWN_ERROR;
+        }          
     }
 
     private String getblockheight(String[] params) {
         if ( (params.length >= 3) && (params[2].length() > 0) ) {
-            int height = dbManager.getBlockHeight(params[2]);
-            if (height > 0)
-                return ""+height;
-        }        
-        return "{\"Error\": \"Height not knouwn.\"}\n";
+            try (DbReader dbReader = new DbReader()) {
+                int height = dbReader.getBlockHeight(params[2]);
+                if (height > 0)
+                    return "" + height;
+            } catch (Exception ex) {
+                System.err.println("ApiResponse: " + ex.getMessage());
+                return UNKNOWN_ERROR;
+            }                   
+        }
+        return "{\"Error\": \"Height not known.\"}\n";
     }
 
     private int validateHeight(int height, int bestHeight) {
@@ -1235,25 +1251,6 @@ public class ApiResponse extends Task {
             return bestHeight;
         return height;
     }
-    
-    private String getAddresshistoryByHeight(String[] params) {
-        if ((params.length<3) || (params[2].length()==0))
-            return MISSING_PARAMETER;
-        try {
-            int bestHeight = dbManager.getBestHeight();
-            String address = params[2];
-            int bitmask = (params.length>5) ? Integer.parseInt(params[5]) : 3;
-            int highBlock = (params.length>4) ? Integer.parseInt(params[4]) 
-                : bestHeight;
-            int lowBlock = (params.length>3) ? Integer.parseInt(params[3]) 
-                : bestHeight - 10080;
-            lowBlock = validateHeight(lowBlock, bestHeight);
-            highBlock = validateHeight(highBlock, bestHeight);
-            return dbManager.getHistorryByHeight(address, bitmask, lowBlock, highBlock);
-        } catch (NumberFormatException ex) {
-            return UNKNOWN_ERROR;
-        }
-    }
 
     private int validateTime(int time, int minTime, int maxTime) {
         if (time<minTime)
@@ -1261,15 +1258,35 @@ public class ApiResponse extends Task {
         if (time>maxTime)
             return maxTime;
         return time;
-    }    
+    }       
+    
+    private String getAddresshistoryByHeight(String[] params) {
+        if ((params.length<3) || (params[2].length()==0))
+            return MISSING_PARAMETER;
+        String address = params[2];
+        try (DbReader dbReader = new DbReader()) {
+            int bitmask = (params.length>5) ? Integer.parseInt(params[5]) : 3;
+            int bestHeight = dbReader.getBestHeight();
+            int highBlock = (params.length>4) ? Integer.parseInt(params[4]) 
+                : bestHeight;
+            int lowBlock = (params.length>3) ? Integer.parseInt(params[3]) 
+                : bestHeight - 10080;
+            lowBlock = validateHeight(lowBlock, bestHeight);
+            highBlock = validateHeight(highBlock, bestHeight);
+            return dbReader.getHistorryByHeight(address, bitmask, lowBlock, highBlock);
+        } catch (Exception ex) {
+            System.err.println("ApiResponse: " + ex.getMessage());
+            return UNKNOWN_ERROR;
+        }      
+    }
     
     private String getAddresshistoryByTime(String[] params) {
         if ((params.length<3) || (params[2].length()==0))
             return MISSING_PARAMETER;
-        try {
-            int minTime = dbManager.getLowestTime();
-            int maxTime = dbManager.getHighestTime();
-            String address = params[2];
+        String address = params[2];
+        try (DbReader dbReader = new DbReader()) {
+            int minTime = dbReader.getLowestTime();
+            int maxTime = dbReader.getHighestTime();
             int bitmask = (params.length>5) ? Integer.parseInt(params[5]) : 3;
             int highTime = (params.length>4) ? Integer.parseInt(params[4]) 
                 : maxTime;
@@ -1277,15 +1294,15 @@ public class ApiResponse extends Task {
                 : maxTime - 10080*60;
             lowTime = validateTime(lowTime, minTime, maxTime);
             highTime = validateTime(highTime, minTime, maxTime);
-            return dbManager.getHistorryByTime(address, bitmask, lowTime, highTime);
-        } catch (NumberFormatException ex) {
+            return dbReader.getHistorryByTime(address, bitmask, lowTime, highTime);
+        } catch (Exception ex) {
             return UNKNOWN_ERROR;
         }
     }
+        
 }
 
 
 
-// do configu dát IPFS bránu?
-// getblockheight (aliases: blockheight, getblockindex, blockindex)
+// IPFS gates into config?
 // txbyaddr - do it compatible with API v.1?

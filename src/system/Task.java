@@ -21,14 +21,14 @@ public abstract class Task extends Thread {
     public final void run() {
         initialization();
         mainTask();
-        System.err.println("Thread " +  threadName + " exiting...");
+        //System.err.println("Thread " +  threadName + " exiting...");
         finished();
-        System.err.println("Thread " +  threadName + " closed.");
+        //System.err.println("Thread " +  threadName + " closed.");
     }
    
     @Override
     public final void start () {
-        System.err.println("Thread " +  threadName + " starting.");
+        //System.err.println("Thread " +  threadName + " starting.");
         thread.start ();
     }
 

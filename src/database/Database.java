@@ -25,27 +25,19 @@ import static system.Utils.setJsonOrdered;
  * @author Milan Gallas
  */
 public class Database {
+    public static final String BLOCKS = "blocks";
+    public static final String TRANSACTIONS = "transactions";
+    public static final String OUTPUTS = "outputs";
+    public static final String ADDRESSES = "addresses";
+    public static final String TXDETAILS = "txdetails";
+    public static final String SPENT = "spent";    
+    
     private static final Config config = Config.getConfig();
     private static final String JDBC_DRIVER = config.dbDriver;
     private static final String DB_URL_PREFIX = config.dbPrefix;
     private static final String USER = config.dbUser;
     private static final String PASS = config.dbPassword;     
     private Connection connection;
-   
-    /*
-    * Close all connection and defrag the database.
-    * Should be calles only once at the program exit.
-    */
-    public static void closeAllConnections(String dbName) {
-        try {
-           Database db = new Database();
-           System.out.println("Please wait, maintaining database...");
-           db.command("SHUTDOWN DEFRAG");
-           System.out.println("Database closed.");
-        } catch (SQLException ex) {
-           System.err.println("Database maintaince failed.");
-        }
-    }
    
     /**
      * Open an embedded database at [current_path]/db/dbName
@@ -73,28 +65,17 @@ public class Database {
     }
     
      /**
-     * @param sql
-     * @return 
+     * @param commands
      */
-    public int command(String sql) {
-        try (Statement stmt = connection.createStatement()){
-           return stmt.executeUpdate(sql);
+    public void command(String... commands) {
+        try (Statement stmt = connection.createStatement()) {
+           for (String sql : commands ) {
+               stmt.addBatch(sql);
+           }
+           stmt.executeBatch();
        } catch (SQLException ex) {
            System.err.println(ex.getMessage());
-           return -1;
        }
-    }
-    
-    public int commandWithParams(String sql, Object[] params) {
-        try (PreparedStatement ps = connection.prepareStatement(sql)) {
-            int index = 1;
-            for(Object param : params) 
-                ps.setObject(index++, param);
-            return ps.executeUpdate();
-        } catch (SQLException ex) {
-            System.err.println(ex.getMessage());
-            return -1;
-        }           
     }
     
     /**
@@ -113,26 +94,6 @@ public class Database {
         }
     }
     
-     /**
-     * If the table does not exist, try create it. 
-     * @param tableName
-     * @param items
-     * @throws SQLException 
-     * Example:
-     *              database.createTable("tableName", 
-                        "id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY",
-                        "jmeno VARCHAR( 30 ) NOT NULL",
-                        "vek INT NOT NULL",
-                        "jazyk VARCHAR( 20 ) NOT NULL" );
-     */
-    public void createTable(String tableName, String...items) throws SQLException {
-        String params = String.join(", ", items);
-        String sql = String.format("CREATE TABLE IF NOT EXISTS %s (%s)", tableName, params);
-        try (Statement stmt = connection.createStatement()) {
-           stmt.executeUpdate(sql);
-       } 
-    }
-
     public JSONArray select(String sql) {
         try {
             try (PreparedStatement ps = connection.prepareStatement(sql, ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY)) {
@@ -161,7 +122,6 @@ public class Database {
     
     
     public TreeSet<Object> selectSet(String sql) {
-        //System.out.println(sql);
         try {
             try (PreparedStatement ps = connection.prepareStatement(sql, ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY)) {
                 try (ResultSet rs = ps.executeQuery()) {

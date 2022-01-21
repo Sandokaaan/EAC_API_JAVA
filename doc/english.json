@@ -44,7 +44,7 @@
          "Integer - the highest block (optional, default = maxheight).",
          "Integer - bitmask of transaction type (optional, 0-none, 1-received, 2-sent, 4-mined, default = 3)."
       ],
-      "return":"Tranaction history for an address in a block height range.",
+      "return":"Tranaction history (up to 100 items) for an address in a block height range.",
       "examples":[
          "addresshistorybyheight/eZbfW6QTMPU3ZgUNNFFRSviL2AzCZmF3HU/3622661/3632645/7",
          "addresshistorybyheight/eZbfW6QTMPU3ZgUNNFFRSviL2AzCZmF3HU/3622661/3632645/1",
@@ -59,7 +59,7 @@
          "Integer - the highest time (optional, default = now).",
          "Integer - bitmask of transaction type (optional, 0-none, 1-received, 2-sent, 4-mined, default = 3)."
       ],
-      "return":"Tranaction history for an address in a timestamp range.",
+      "return":"Tranaction history (up to 100 items) for an address in a timestamp range.",
       "examples":[
          "addresshistorybytime/eZbfW6QTMPU3ZgUNNFFRSviL2AzCZmF3HU/1629041582/1629648936/7",
          "addresshistorybytime/eZbfW6QTMPU3ZgUNNFFRSviL2AzCZmF3HU/1629041582/1629648936/1",

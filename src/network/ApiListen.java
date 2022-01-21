@@ -5,7 +5,7 @@
  */
 package network;
 
-import database.DbManager;
+import database.DbReader;
 import system.Config;
 import java.io.IOException;
 import java.net.ServerSocket;
@@ -19,7 +19,7 @@ public class ApiListen extends system.Task {
     private boolean exiting;
     private ServerSocket serverSocket;
     RpcClient client;
-    DbManager dbManager;
+    DbReader dbManager;
            
     public ApiListen() {
         super(DEFAULT_THREAD_NAME);

@@ -6,7 +6,7 @@
 package main;
 
 import database.Database;
-import database.DbManager;
+import database.DbReader;
 import java.sql.SQLException;
 import java.util.Scanner;
 import network.ApiListen;
@@ -28,13 +28,6 @@ public class Api {
         
         Scanner sc = new Scanner(System.in, Utils.CHARSETNAME);
         
-        DbManager dbm;
-        try {
-            dbm = new DbManager();
-        } catch (SQLException ex) {
-            System.err.println("Database initialization failed - " + ex.getMessage());
-            return;
-        }
         SyncManager sync = new SyncManager();
         ApiListen apiServer = new ApiListen();
         apiServer.start();
@@ -48,37 +41,10 @@ public class Api {
             }
             if (s.equals("exit"))
                 break;
-            if (s.equals("stat"))
-                System.out.println(dbm.getSyncStat().toString());
-            else if (s.startsWith("addr")) {
-                String[] slices = s.split(" ");
-                if (slices.length == 2) {
-                    JSONArray received = dbm.getReceivedHistory(slices[1], 10);
-                    JSONArray send = dbm.getSentHistory(slices[1], 10);
-                    System.out.println(dbm.rearrange(received, send));
-                }
-                else
-                    System.out.println("invalid address");
-            }
-            else 
-                System.out.println(dbm.selectAsJSON(s));
         }
         
-        sync.close();
-        try {
-            sync.join();
-        } catch (InterruptedException ex) {
-            System.err.println(ex.getMessage());
-        }        
-
         apiServer.close();
-        try {
-            apiServer.join();
-        } catch (InterruptedException ex) {
-            System.err.println(ex.getMessage());
-        }        
-
-        Database.closeAllConnections(Config.getConfig().dbName);
+        sync.close();
 
     }
         

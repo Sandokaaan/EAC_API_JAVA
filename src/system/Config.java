@@ -90,8 +90,8 @@ public class Config {
         int _p2pMagic = -34481216;
         String _p2pPeerName = "Java API Server";
         int _reconnectDelay = 5000;
-        String _dbDriver = "org.h2.Driver";
-        String _dbPrefix = "jdbc:h2:./db/";
+        String _dbDriver = "com.mysql.cj.jdbc.Driver";
+        String _dbPrefix = "jdbc:mysql://localhost/";
         String _dbName = "database";
         String _dbUser = "sa";
         String _dbPassword = "";
