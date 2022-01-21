@@ -1,7 +1,7 @@
 Requirements:
 - A fully sync EarthCoin v.2.1.1 node (or higher) with <code>txindex=1</code> in the config file and enabled rpc calls
 - Java runtime environment v.8.0 or higher
-- Approx. 50 GB disk space for blockchain data and database operations
+- Approx. 5 GB disk space for blockchain data
 - A properly configure MySQL server
 
 To run this binary distribution use steps as follows:
