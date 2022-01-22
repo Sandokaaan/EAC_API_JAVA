@@ -515,8 +515,3 @@ public class DbReader implements AutoCloseable{
         
 }
     
-/// todo - addressstatistics taky pres stream
-/// vyhodit debug zpravy sent, received, arange
-/// INSERT INTO pokus (id, name) VALUES (11, 'kozel'); SET @ID := (SELECT id FROM pokus WHERE name='kozel'); INSERT INTO pokus (id, name) VALUES (11, 'kozlik') ON DUPLICATE KEY UPDATE name='kozlicek';
-
-// drop table addresses; drop table blocks; drop table outputs; drop table transactions;

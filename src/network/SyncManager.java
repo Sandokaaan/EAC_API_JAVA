@@ -132,9 +132,6 @@ public class SyncManager extends Task {
         try {
             JSONObject jsonBlock = block.getAsJson();
             int height = jsonBlock.getInt("height");
-            if (height == 1) {
-                dbWriter.createIndexes();
-            }
             int ntx = jsonBlock.getInt("nTx");
             String hash = jsonBlock.getString("hash");
             int time = jsonBlock.getInt("time");

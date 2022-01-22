@@ -13,15 +13,12 @@ import database.records.Transactions;
 import database.records.TxDetails;
 import java.sql.Connection;
 import java.sql.DriverManager;
-import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Deque;
 import java.util.LinkedList;
-import java.util.concurrent.TimeUnit;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import java.util.stream.Stream;
 import system.Config;
 import system.Task;
 
@@ -177,29 +174,21 @@ public class DbWriter extends Task{
         }
     }
     
-    /*
-    * Tables management methods
-    */
-    
-    private boolean checkTable(String name) {
-        try {
-            java.sql.DatabaseMetaData dbm = connection.getMetaData();
-            try (ResultSet tables = dbm.getTables(null, null, name, null)) {
-                return tables.next();
-            }
+    private boolean checkTables() {
+        try (ResultSet rs = stmt.executeQuery("Show tables");) {
+            LinkedList<String> tablesInDatabase = new LinkedList<>();
+            while(rs.next())
+                tablesInDatabase.add(rs.getString(1).toLowerCase());
+            LinkedList<String> tablesRequired = new LinkedList<>();
+            Stream.of(Database.BLOCKS, Database.BLOCKS, 
+                    Database.ADDRESSES, Database.TXDETAILS, 
+                    Database.OUTPUTS,Database.SPENT)
+                    .forEach((String x) -> tablesRequired.add(x.toLowerCase()));
+            return tablesInDatabase.containsAll(tablesRequired);
         } catch (SQLException ex) {
+            exiting = true;
             return false;
         }
-    }    
-    
-    private boolean checkTables() {
-        return 
-            checkTable(Database.BLOCKS) &&
-            checkTable(Database.TRANSACTIONS) &&
-            checkTable(Database.ADDRESSES) &&
-            checkTable(Database.TXDETAILS) &&
-            checkTable(Database.OUTPUTS) &&
-            checkTable(Database.SPENT);    
     }
     
     private void createTable(String tableName, String...items) throws SQLException {
@@ -240,10 +229,11 @@ public class DbWriter extends Task{
         System.out.println("Database ready");        
     }
     
-    private void deleteTable(String tableName) throws SQLException {
-        if (checkTable(tableName)) {
+    private void deleteTable(String tableName) {
+        try {
             String sql = String.format("DROP TABLE %s; ", tableName);
             stmt.executeUpdate(sql);
+        } catch (SQLException ex) {
         }
     }
     
@@ -256,9 +246,7 @@ public class DbWriter extends Task{
         deleteTable(Database.SPENT);
     }
     
-    private void addIndexIfNotExists(String table, String collumn) throws SQLException {
-        if (idexExists(table, collumn))
-            return;
+    private void addIndex(String table, String collumn) throws SQLException {
         String sql = String.format("ALTER TABLE %s ADD INDEX (%s); ", table, collumn);
         stmt.executeUpdate(sql);
     }
@@ -266,35 +254,30 @@ public class DbWriter extends Task{
     public void createIndexes() {
         try {
             System.out.println("Indexing tables...");
-            addIndexIfNotExists(Database.BLOCKS, "time");
-            addIndexIfNotExists(Database.BLOCKS, "hash");
-            addIndexIfNotExists(Database.TXDETAILS, "height");
-            addIndexIfNotExists(Database.OUTPUTS, "addr_id");
-            addIndexIfNotExists(Database.OUTPUTS, "tx_id");
-            addIndexIfNotExists(Database.SPENT, "spending_tx_id");
+            addIndex(Database.BLOCKS, "time");
+            addIndex(Database.BLOCKS, "hash");
+            addIndex(Database.TXDETAILS, "height");
+            addIndex(Database.OUTPUTS, "addr_id");
+            addIndex(Database.OUTPUTS, "tx_id");
+            addIndex(Database.SPENT, "spending_tx_id");
+            addIndex(Database.SPENT, "tx_id");
             System.out.println("Indexing finished.");
         } catch (SQLException ex) {
             System.err.println("Indexing failed - " + ex.getMessage());
         }
     } 
     
-    private boolean idexExists(String table, String collumn) {
-        String sql = String.format("SHOW INDEX FROM %s WHERE Column_name='%s';", table, collumn);
-        try (PreparedStatement ps = connection.prepareStatement(sql)) {
-            try (ResultSet index = ps.executeQuery()) {
-                return index.next();
-            }
-        } catch (SQLException ex) {
-            return false;
-        }
-    }
-    
     public void checkOrCreateTables() {
+        System.out.println("Check tables...");
         try {
             if (!checkTables()) {
+                System.out.println("Preparing tables...");
                 deleteTables();
                 createTables();
+                createIndexes();
+                System.out.println("Tables created.");
             } 
+            System.out.println("Database is ready.");
         } catch (SQLException ex) {
             System.err.println(ex.getMessage());
             exiting = true;
