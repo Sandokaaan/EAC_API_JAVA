@@ -329,7 +329,11 @@ public class DbReader implements AutoCloseable{
                 "low_block, " +
                 "high_block, " +
                 "(SELECT time FROM " + Database.BLOCKS + " WHERE height=low_block) AS low_time, " +
-                "(SELECT time FROM " + Database.BLOCKS + " WHERE height=high_block) AS high_time " +
+                "(SELECT time FROM " + Database.BLOCKS + " WHERE height=high_block) AS high_time, " +
+                "received_txcomment, " +
+                "received_ipfs, " +
+                "sent_txcomment, " +
+                "sent_ipfs " +
             "FROM (SELECT " +
                     "SUM(CASE WHEN it.coinbase=false THEN 0 ELSE 1 END) AS mined_count, " +
                     "COUNT(f.tx_id) AS inputs_count, " +
@@ -338,7 +342,11 @@ public class DbReader implements AutoCloseable{
                     "SUM(CASE WHEN it.coinbase=false THEN 0 ELSE value END) AS mined_value, " +
                     "SUM(CASE WHEN spending_tx_id IS NULL THEN 0 ELSE value END) AS sent_value, " +
                     "LEAST(MIN(it.height),COALESCE(MIN(ot.height),2147483647)) AS low_block, " +
-                    "GREATEST(MAX(it.height),COALESCE(MAX(ot.height),0)) AS high_block " +
+                    "GREATEST(MAX(it.height),COALESCE(MAX(ot.height),0)) AS high_block, " +
+                    "COUNT(DISTINCT it.ipfs) AS received_ipfs, " +
+                    "COUNT(DISTINCT ot.ipfs) AS sent_ipfs, " +
+                    "COUNT(DISTINCT it.txcomment) AS received_txcomment, " +
+                    "COUNT(DISTINCT ot.txcomment) AS sent_txcomment " +
                 "FROM (SELECT tx_id, vout, value FROM " + Database.OUTPUTS + " AS o " +
                 "NATURAL JOIN " + Database.ADDRESSES +
                 " WHERE address='" + address + "') AS f " +
