@@ -25,7 +25,9 @@ public class TxDetails {
             this.txid = txid;
             this.height = height;
             this.coinbase = coinbase;
-            this.txcomment = (txcomment!=null) ? txcomment.replaceAll("[^a-zA-Z0-9]", " ") : txcomment;
+            this.txcomment = (txcomment!=null) ? 
+                    txcomment.replace("\\", " ").replaceAll("[%'\'\"\n\r\b\t]", " ").replaceAll("\\s{2,}", " ").trim() 
+                    : txcomment;
             this.ipfs = ipfs;
         }
         
