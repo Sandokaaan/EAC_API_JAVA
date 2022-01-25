@@ -210,8 +210,8 @@ public class DbWriter extends Task{
             "tx_id BIGINT NOT NULL PRIMARY KEY",    
             "height INTEGER NOT NULL",
             "coinbase BOOLEAN NOT NULL",
-            "txcomment VARCHAR(252) DEFAULT NULL",
-            "ipfs VARCHAR(90) DEFAULT NULL");
+            "txcomment VARCHAR(252)",
+            "ipfs VARCHAR(90)");
          createTable(Database.ADDRESSES,
             "addr_id BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY",
             "address VARCHAR(90) UNIQUE NOT NULL");

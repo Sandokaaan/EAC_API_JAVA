@@ -158,7 +158,7 @@ public class SyncManager extends Task {
                 JSONObject tx = transactions.getJSONObject(i);
                 String txid = tx.getString("txid");
                 String ipfs = tx.optString("IPFS_CID", null);
-                String txcomment = tx.optString("txcomment", null);
+                String txcomment = tx.optString("txComment", null);
                 dbBlockBuffer.addTxDetail(txid, height, (i==0), txcomment, ipfs);
                 JSONArray outputs = tx.getJSONArray("vout");
                 JSONArray vin = tx.getJSONArray("vin");
