@@ -26,13 +26,15 @@ public class TxDetails {
             this.height = height;
             this.coinbase = coinbase;
             this.txcomment = (txcomment!=null) ? 
-                    txcomment.replace("\\", " ").replaceAll("[%'\'\"\n\r\b\t]", " ").replaceAll("\\s{2,}", " ").trim() 
+                    "'" + txcomment.replace("\\", " ").
+                            replaceAll("[%'\'\"\n\r\b\t]", " ").
+                            replaceAll("\\s{2,}", " ").trim() + "'" 
                     : txcomment;
-            this.ipfs = ipfs;
+            this.ipfs = (ipfs!=null) ? "'" + ipfs + "'" : ipfs;
         }
         
         public String getValue() {
-            return String.format("((SELECT tx_id FROM %s WHERE txid='%s' LIMIT 1),%d,'%s','%s',%s)",
+            return String.format("((SELECT tx_id FROM %s WHERE txid='%s' LIMIT 1),%d,%s,%s,%s)",   
                 Database.TRANSACTIONS, txid, height, txcomment, ipfs, (coinbase?"TRUE":"FALSE"));
         }
     }
