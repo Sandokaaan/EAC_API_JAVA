@@ -257,7 +257,10 @@ public class ApiResponse extends Task {
                     break;          
                 case "addresshistorybytime":
                     response = getAddresshistoryByTime(params);
-                    break;          
+                    break;         
+                case "gettopblocks":
+                    response = getTopBlocks(params);
+                    break;
                 case "help":
                     explorerMode = config.withExplorer;
                     response = explorerMode ? doc(params) : apidoc(params);
@@ -1295,6 +1298,16 @@ public class ApiResponse extends Task {
             lowTime = validateTime(lowTime, minTime, maxTime);
             highTime = validateTime(highTime, minTime, maxTime);
             return dbReader.getHistorryByTime(address, bitmask, lowTime, highTime);
+        } catch (Exception ex) {
+            return UNKNOWN_ERROR;
+        }
+    }
+    
+    private String getTopBlocks(String[] params) {
+        try (DbReader dbReader = new DbReader()) {
+            int n = (params.length>2) ? Integer.parseInt(params[2]) : 20;
+            n = (n<=0) ? 1 : (n>100) ? 100 : n;
+            return dbReader.getBestBlocks(n).toString();
         } catch (Exception ex) {
             return UNKNOWN_ERROR;
         }

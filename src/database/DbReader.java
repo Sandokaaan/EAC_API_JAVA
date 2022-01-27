@@ -146,7 +146,8 @@ public class DbReader implements AutoCloseable{
             "SELECT "
                 + "CONVERT( 100*COUNT(*)/(1.0+MAX(height)), REAL ) AS sync, " 
                 + "COUNT(*) AS count, "
-                + "MAX(height) AS height "
+                + "MAX(height) AS height, "
+                + "UNIX_TIMESTAMP() - MAX(time) AS age "
             + "FROM " + Database.BLOCKS + ";"
         );
     }
@@ -520,6 +521,28 @@ public class DbReader implements AutoCloseable{
         JSONArray sent = ((bitmask & 2) != 0) ? getSentHistoryByTime(address, lowTime, highTime) : new JSONArray();
         return rearrange(received, sent).toString();
     }
-        
+    
+    public JSONArray getBestBlocks(int n) {
+        return selectAsJSON(
+            "SELECT " +
+                "height, " +
+                "UNIX_TIMESTAMP() - time AS age, " +
+                "hash, " +
+                "address AS miner " +
+            "FROM " + Database.BLOCKS + 
+            " NATURAL JOIN " + Database.TXDETAILS + 
+            " NATURAL JOIN " + Database.TRANSACTIONS +
+            " NATURAL JOIN " + Database.OUTPUTS + 
+            " NATURAL JOIN " + Database.ADDRESSES + 
+                " WHERE height>(SELECT MAX(height)-" + n + 
+                    " FROM " + Database.BLOCKS +
+                ") AND vout=0" +
+                " AND coinbase=true" +
+            " ORDER BY height DESC; "
+        );
+    }
+    
+    
+    
 }
     
