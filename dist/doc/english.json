@@ -16,7 +16,7 @@
       "method":"syncinfo",
       "parameters":[
       ],
-      "return":"Returns count of blocks in the database, percentage of sync and best block height.",
+      "return":"Returns count of blocks in the database, percentage of sync, height of the best block and its age in seconds.",
       "examples":[
          "syncinfo"
       ]        
@@ -287,6 +287,16 @@
        "examples":[
          "getblockheight/d4718bece67820d8454e506ebd03217f181e9046bdecf18ca7e59b5da41c353c"
       ]
-   }
+   },
+   "gettopblocks":{
+      "method":"gettopblocks",
+      "parameters":[
+         "Integer - count of blocks requested (optional, default = 20, max = 100)."
+      ],
+      "return":"List of the most top blocks.",
+       "examples":[
+         "gettopblocks/10"
+      ]
+   }   
 }
 
