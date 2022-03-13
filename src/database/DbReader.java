@@ -152,14 +152,15 @@ public class DbReader implements AutoCloseable{
         );
     }
     
-    private JSONArray getSentHistory(String address, int limit) {
+    private JSONArray getSentHistory(String address, int limit, int bestHeight) {
         //System.out.println("sent");
         return selectAsJSON(
             "SELECT " +
                 "'sent' AS type, " +
                 "txid, " +
                 "hash, " +
-                "height, " +    
+                "height, " +
+                "(" + bestHeight + " - height)  AS confirmations, " +
                 "time, "  +   
                 "txcomment, " +
                 "ipfs, " +
@@ -181,7 +182,7 @@ public class DbReader implements AutoCloseable{
         );
     }
     
-    private JSONArray getReceivedHistory(String address, int limit) {
+    private JSONArray getReceivedHistory(String address, int limit, int bestHeight) {
         //System.out.println("received");
         return selectAsJSON(
             "SELECT " +
@@ -193,6 +194,7 @@ public class DbReader implements AutoCloseable{
                 "f.vout, " +
                 "time, " +
                 "height, " +
+                "(" + bestHeight + " - height)  AS confirmations, " +         
                 "hash, " +
                 "txcomment, " +
                 "ipfs " +    
@@ -239,7 +241,7 @@ public class DbReader implements AutoCloseable{
                     setJsonOrdered(tx);
                     lastTxid = txid;
                     Object[] items = Stream
-                        .of("type", "txid", "time", "height", "hash", "txcomment", "ipfs")
+                        .of("type", "txid", "time", "height", "confirmations", "hash", "txcomment", "ipfs")
                         .filter(jsonItem::has).toArray();
                     for (Object item : items) {
                         String key = (String)item;
@@ -307,11 +309,6 @@ public class DbReader implements AutoCloseable{
             "INNER JOIN " + Database.TXDETAILS + " AS d " +
                 "ON s.spending_tx_id=d.tx_id " +
             "NATURAL JOIN " + Database.BLOCKS + " AS b; "        
-                
-                
-                /*
-                
-                */
         );
     }    
     
@@ -360,7 +357,7 @@ public class DbReader implements AutoCloseable{
         );        
     }
     
-    private JSONArray getReceivedByHeight(String address, int lowBlock, int highBlock, boolean received, boolean mined) {
+    private JSONArray getReceivedByHeight(String address, int lowBlock, int highBlock, boolean received, boolean mined, int bestHeight) {
         boolean both = received && mined;
         return selectAsJSON(
             "SELECT " +
@@ -372,6 +369,7 @@ public class DbReader implements AutoCloseable{
                 "f.vout, " +
                 "time, " +
                 "height, " +
+                "(" + bestHeight + " - height)  AS confirmations, " +
                 "hash, " +
                 "txcomment, " +
                 "ipfs " +    
@@ -395,7 +393,7 @@ public class DbReader implements AutoCloseable{
         );
     }
     
-    private JSONArray getReceivedByTime(String address, int lowTime, int highTime, boolean received, boolean mined) {
+    private JSONArray getReceivedByTime(String address, int lowTime, int highTime, boolean received, boolean mined, int bestHeight) {
         boolean both = received && mined;
         return selectAsJSON(
             "SELECT " +
@@ -407,6 +405,7 @@ public class DbReader implements AutoCloseable{
                 "f.vout, " +
                 "time, " +
                 "height, " +
+                "(" + bestHeight + " - height)  AS confirmations, " +
                 "hash, " +
                 "txcomment, " +
                 "ipfs " +    
@@ -431,14 +430,15 @@ public class DbReader implements AutoCloseable{
         );
     } 
     
-    private JSONArray getSentHistoryByTime(String address, int lowTime, int highTime) {
+    private JSONArray getSentHistoryByTime(String address, int lowTime, int highTime, int bestHeight) {
         //System.out.println("sent");
         return selectAsJSON(
             "SELECT " +
                 "'sent' AS type, " +
                 "txid, " +
                 "hash, " +
-                "height, " +    
+                "height, " +
+                "(" + bestHeight + " - height)  AS confirmations, " +
                 "time, "  +   
                 "txcomment, " +
                 "ipfs, " +
@@ -461,14 +461,15 @@ public class DbReader implements AutoCloseable{
         );    
     }
     
-    private JSONArray getSentHistoryByHeight(String address, int lowBlock, int highBlock) {
+    private JSONArray getSentHistoryByHeight(String address, int lowBlock, int highBlock, int bestHeight) {
         //System.out.println("sent");
         return selectAsJSON(
             "SELECT " +
                 "'sent' AS type, " +
                 "txid, " +
                 "hash, " +
-                "height, " +    
+                "height, " +
+                "(" + bestHeight + " - height)  AS confirmations, " +
                 "time, "  +   
                 "txcomment, " +
                 "ipfs, " +
@@ -500,25 +501,28 @@ public class DbReader implements AutoCloseable{
     }
 
     public String getHistorry(String address, int limitR, int limitS) {
-        JSONArray received = getReceivedHistory(address, limitR);
-        JSONArray sent = getSentHistory(address, limitS);
+        int bestHeight = getBestHeight();
+        JSONArray received = getReceivedHistory(address, limitR, bestHeight);
+        JSONArray sent = getSentHistory(address, limitS, bestHeight);
         return rearrange(received, sent).toString();
     }
 
     
     public String getHistorryByHeight(String address, int bitmask, int lowBlock, int highBlock) {
+        int bestHeight = getBestHeight();
         JSONArray received = ((bitmask & 5) != 0) ? 
-                getReceivedByHeight(address, lowBlock, highBlock, ((bitmask & 1) != 0), ((bitmask & 4) != 0)) 
+                getReceivedByHeight(address, lowBlock, highBlock, ((bitmask & 1) != 0), ((bitmask & 4) != 0), bestHeight) 
                 : new JSONArray();
-        JSONArray sent = ((bitmask & 2) != 0) ? getSentHistoryByHeight(address, lowBlock, highBlock) : new JSONArray();
+        JSONArray sent = ((bitmask & 2) != 0) ? getSentHistoryByHeight(address, lowBlock, highBlock, bestHeight) : new JSONArray();
         return rearrange(received, sent).toString();
     }
     
     public String getHistorryByTime(String address, int bitmask, int lowTime, int highTime) {
+        int bestHeight = getBestHeight();
         JSONArray received = ((bitmask & 5) != 0) ? 
-                getReceivedByTime(address, lowTime, highTime, ((bitmask & 1) != 0), ((bitmask & 4) != 0)) 
+                getReceivedByTime(address, lowTime, highTime, ((bitmask & 1) != 0), ((bitmask & 4) != 0), bestHeight) 
                 : new JSONArray();
-        JSONArray sent = ((bitmask & 2) != 0) ? getSentHistoryByTime(address, lowTime, highTime) : new JSONArray();
+        JSONArray sent = ((bitmask & 2) != 0) ? getSentHistoryByTime(address, lowTime, highTime, bestHeight) : new JSONArray();
         return rearrange(received, sent).toString();
     }
     
