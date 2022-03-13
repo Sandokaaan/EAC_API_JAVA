@@ -357,16 +357,26 @@ public class DbManager {
     
     public JSONArray getReceivedHistory(String address, int limit) {
         //System.out.println("received");
+        int bestHeight = getBestHeight();
         return selectAsJSON(
             "SELECT " +
                 "CASE WHEN coinbase=true THEN 'mined' ELSE 'received' END AS type, " +
                 "a.address, " +
+                "(SELECT address FROM " + SPENT + " AS s " +
+                    "LEFT JOIN " + OUTPUTS + " AS o " +
+                        "ON o.tx_id=s.tx_id " +
+                    "LEFT JOIN " + ADDRESSES + " AS a " +
+                        "ON a.addr_id=o.addr_id " +
+                    "WHERE s.spending_tx_id=t.tx_id " +
+                    "LIMIT 1 " +
+                ") AS sender, " +                    
                 "o.value, " +
                 "CASE WHEN spending_tx_id IS NULL THEN false ELSE true END AS spent," +    
                 "t.txid, " +
                 "o.vout, " +
                 "b.time, " +
                 "d.height, " +
+                "(" + bestHeight + " - d.height)  AS confirmations, " +
                 "b.hash, " +
                 "d.txcomment, " +
                 "d.ipfs " +    
@@ -542,15 +552,25 @@ public class DbManager {
     
     private JSONArray getReceivedByTime(String address, int lowTime, int highTime, boolean received, boolean mined) {
         boolean both = received && mined;
+        int bestHeight = getBestHeight();
         return selectAsJSON("SELECT " +
                 "CASE WHEN coinbase=true THEN 'mined' ELSE 'received' END AS type, " +
                 "a.address, " +
+                "(SELECT address FROM " + SPENT + " AS s " +
+                    "LEFT JOIN " + OUTPUTS + " AS o " +
+                        "ON o.tx_id=s.tx_id " +
+                    "LEFT JOIN " + ADDRESSES + " AS a " +
+                        "ON a.addr_id=o.addr_id " +
+                    "WHERE s.spending_tx_id=t.tx_id " +
+                    "LIMIT 1 " +
+                ") AS sender, " +                  
                 "o.value, " +
                 "CASE WHEN spending_tx_id IS NULL THEN false ELSE true END AS spent," +    
                 "t.txid, " +
                 "o.vout, " +
                 "b.time, " +
                 "d.height, " +
+                "(" + bestHeight + " - d.height)  AS confirmations, " +                            
                 "b.hash, " +
                 "d.txcomment, " +
                 "d.ipfs " + 
