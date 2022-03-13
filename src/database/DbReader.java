@@ -188,6 +188,14 @@ public class DbReader implements AutoCloseable{
             "SELECT " +
                 "CASE WHEN coinbase=true THEN 'mined' ELSE 'received' END AS type, " +
                 "'" + address + "' AS address, " +
+                "(SELECT address FROM " + Database.SPENT + " AS s " +
+                    "LEFT JOIN " + Database.OUTPUTS + " AS o " +
+                        "ON o.tx_id=s.tx_id " +
+                    "LEFT JOIN " + Database.ADDRESSES + " AS a " +
+                        "ON a.addr_id=o.addr_id " +
+                    "WHERE s.spending_tx_id=f.tx_id " +
+                    "LIMIT 1 " +
+                ") AS sender, " +
                 "value, " +
                 "CASE WHEN spending_tx_id IS NULL THEN false ELSE true END AS spent," +    
                 "txid, " +
@@ -363,6 +371,14 @@ public class DbReader implements AutoCloseable{
             "SELECT " +
                 "CASE WHEN coinbase=true THEN 'mined' ELSE 'received' END AS type, " +
                 "'" + address + "' AS address, " +
+                "(SELECT address FROM " + Database.SPENT + " AS s " +
+                    "LEFT JOIN " + Database.OUTPUTS + " AS o " +
+                        "ON o.tx_id=s.tx_id " +
+                    "LEFT JOIN " + Database.ADDRESSES + " AS a " +
+                        "ON a.addr_id=o.addr_id " +
+                    "WHERE s.spending_tx_id=f.tx_id " +
+                    "LIMIT 1 " +
+                ") AS sender, " +                        
                 "value, " +
                 "CASE WHEN spending_tx_id IS NULL THEN false ELSE true END AS spent," +    
                 "txid, " +
@@ -399,6 +415,14 @@ public class DbReader implements AutoCloseable{
             "SELECT " +
                 "CASE WHEN coinbase=true THEN 'mined' ELSE 'received' END AS type, " +
                 "'" + address + "' AS address, " +
+                "(SELECT address FROM " + Database.SPENT + " AS s " +
+                    "LEFT JOIN " + Database.OUTPUTS + " AS o " +
+                        "ON o.tx_id=s.tx_id " +
+                    "LEFT JOIN " + Database.ADDRESSES + " AS a " +
+                        "ON a.addr_id=o.addr_id " +
+                    "WHERE s.spending_tx_id=f.tx_id " +
+                    "LIMIT 1 " +
+                ") AS sender, " +                        
                 "value, " +
                 "CASE WHEN spending_tx_id IS NULL THEN false ELSE true END AS spent," +    
                 "txid, " +
