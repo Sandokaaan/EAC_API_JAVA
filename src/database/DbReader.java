@@ -193,7 +193,7 @@ public class DbReader implements AutoCloseable{
                         "ON o.tx_id=s.tx_id " +
                     "LEFT JOIN " + Database.ADDRESSES + " AS a " +
                         "ON a.addr_id=o.addr_id " +
-                    "WHERE s.spending_tx_id=f.tx_id " +
+                    "WHERE s.spending_tx_id=f.tx_id AND s.vout=o.vout " +
                     "LIMIT 1 " +
                 ") AS sender, " +
                 "value, " +
@@ -376,7 +376,7 @@ public class DbReader implements AutoCloseable{
                         "ON o.tx_id=s.tx_id " +
                     "LEFT JOIN " + Database.ADDRESSES + " AS a " +
                         "ON a.addr_id=o.addr_id " +
-                    "WHERE s.spending_tx_id=f.tx_id " +
+                    "WHERE s.spending_tx_id=f.tx_id AND s.vout=o.vout " +
                     "LIMIT 1 " +
                 ") AS sender, " +                        
                 "value, " +
@@ -420,7 +420,7 @@ public class DbReader implements AutoCloseable{
                         "ON o.tx_id=s.tx_id " +
                     "LEFT JOIN " + Database.ADDRESSES + " AS a " +
                         "ON a.addr_id=o.addr_id " +
-                    "WHERE s.spending_tx_id=f.tx_id " +
+                    "WHERE s.spending_tx_id=f.tx_id AND s.vout=o.vout " +
                     "LIMIT 1 " +
                 ") AS sender, " +                        
                 "value, " +
@@ -574,3 +574,4 @@ public class DbReader implements AutoCloseable{
     
 }
     
+/// int bestHeight = getBestHeight(); staci dat do received !
