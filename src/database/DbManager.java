@@ -364,7 +364,7 @@ public class DbManager {
                 "a.address, " +
                 "(SELECT address FROM " + SPENT + " AS s " +
                     "LEFT JOIN " + OUTPUTS + " AS o " +
-                        "ON o.tx_id=s.tx_id " +
+                        "ON o.tx_id=s.tx_id AND o.vout=s.vout " +
                     "LEFT JOIN " + ADDRESSES + " AS a " +
                         "ON a.addr_id=o.addr_id " +
                     "WHERE s.spending_tx_id=t.tx_id " +
@@ -558,7 +558,7 @@ public class DbManager {
                 "a.address, " +
                 "(SELECT address FROM " + SPENT + " AS s " +
                     "LEFT JOIN " + OUTPUTS + " AS o " +
-                        "ON o.tx_id=s.tx_id " +
+                        "ON o.tx_id=s.tx_id AND o.vout=s.vout " +
                     "LEFT JOIN " + ADDRESSES + " AS a " +
                         "ON a.addr_id=o.addr_id " +
                     "WHERE s.spending_tx_id=t.tx_id " +
