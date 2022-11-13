@@ -5,15 +5,11 @@
  */
 package main;
 
-import database.Database;
-import database.DbReader;
-import java.sql.SQLException;
-import java.util.Scanner;
 import network.ApiListen;
 import network.SyncManager;
-import org.json.JSONArray;
-import system.Config;
-import system.Utils;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.FileReader;
 
 /**
  *
@@ -26,26 +22,27 @@ public class Api {
      */
     public static void main(String[] args) {
         
-        Scanner sc = new Scanner(System.in, Utils.CHARSETNAME);
-        
         SyncManager sync = new SyncManager();
         ApiListen apiServer = new ApiListen();
         apiServer.start();
         sync.start();
         
-        while (true) {
-            String s = sc.nextLine();
-            if (s.length() == 0) {
-                System.out.println("This is log-console of JAVA-API. Write 'exit' to safely close database and exit API");
-                continue;
-            }
-            if (s.equals("exit"))
-                break;
+        BufferedReader in = null;
+        try{
+          in = new BufferedReader(new FileReader("/tmp/apififo"));
+          while(in.ready()){
+             String s = in.readLine();
+             System.err.println("FIFO signal received -> exiting...");
+          }
+          in.close();
+        }catch(IOException ex){
+          System.err.println("FIFO signal failed -> exiting...");
         }
-        
+       
         apiServer.close();
         sync.close();
 
     }
         
 }
+
