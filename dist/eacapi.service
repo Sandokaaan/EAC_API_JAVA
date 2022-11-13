@@ -1,0 +1,13 @@
+[Unit]
+Description=API JAVA service
+
+[Service]
+Type=simple
+Restart=always
+RestartSec=10
+User=eacdaemon
+ExecStart=/usr/local/share/apijava/api_start.sh
+ExecStop=/usr/local/share/apijava/api_stop.sh
+
+[Install]
+WantedBy=multi-user.target
